@@ -1,0 +1,11 @@
+.vscode
+.idea
+*.yy.c
+*.tab.hpp
+*.tab.cpp
+*.tab.hpp
+build
+*.output
+parser
+Tests/out
+Tests/exclude

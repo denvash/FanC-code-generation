@@ -1,0 +1,319 @@
+%{
+  #include "output.hpp"
+  #include "parser.hpp"
+  #include <string>
+  #include <iostream>
+  #include <sstream>
+  #define INT_MAX 255
+  extern int yylex();
+  extern int yylineno;
+  using namespace std;
+  void debugPrint(char const*);
+  void yyerror(char const*);
+%}
+%token VOID INT BYTE B BOOL TRUE FALSE RETURN IF WHILE BREAK CONTINUE SC COMMA LBRACE RBRACE ID NUM STRING
+/* https://introcs.cs.princeton.edu/java/11precedence/ */
+%right ASSIGN
+%left OR
+%left AND
+%left EQ_RELOP
+%nonassoc RELOP
+%left PLUS_MINUS
+%left MUL_DIV
+%right NOT
+%right RPAREN
+%right LPAREN
+%nonassoc NOELSE
+%nonassoc ELSE
+%%
+Program :
+    /* Pre Rule Execution */ {
+      // debugPrint("Init program");
+      init_program();
+    }
+    Funcs                           {
+      // debugPrint("Program Funcs");
+    };
+
+Funcs :
+    %empty                          {}
+    |   FuncDecl Funcs              {
+      // debugPrint("FuncDecl Funcs");
+    };
+
+FuncDecl:
+    RetType ID LPAREN Formals RPAREN {
+      // debugPrint("FuncDecl RetType ID LPAREN Formals RPAREN");
+      $2.TYPE = $1.TYPE;
+      func_init($2,$4);
+      // Opens scope before declaring formals
+      table.open_scope();
+      declare_formals($4);
+    }
+    LBRACE Statements RBRACE CloseScope {
+      // debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
+    };
+
+RetType:
+    Type                            {
+      // debugPrint("RetType Type");
+      $$ = $1;
+    }
+    |   VOID                        {
+      // debugPrint("RetType VOID");
+      $$.TYPE = TYPE_VOID;
+    };
+
+Formals:
+    %empty                          {
+      // debugPrint("Formals Epsilon");
+      $$.NODE = NULL;
+    }
+    | FormalsList                   {
+      // debugPrint("Formals FormalsList");
+      $$ = $1;
+    };
+
+FormalsList:
+    FormalDecl                      {
+      // debugPrint("FormalsList FormalDecl");
+      $$.NODE = new FormalsList($1);
+    }
+    /* Revert the list and the Declaration */
+    | FormalsList COMMA FormalDecl  {
+      // debugPrint("FormalsList FormalDecl COMMA FormalsList");
+      $$.NODE = new FormalsList($1, $3);
+    };
+
+FormalDecl:
+    Type ID                         {
+      // debugPrint("FormalDecl Type ID");
+      $$.TYPE = $1.TYPE;
+      $$.STRING = $2.STRING;
+    };
+
+Statements:
+    Statement                       {
+      // debugPrint("Statements Statement");
+    }
+    | Statements Statement          {
+      // debugPrint("Statements Statements Statement");
+    };
+
+OpenScope:
+    %empty                          {
+      // debugPrint("OpenScope");
+      table.open_scope();
+    };
+
+CloseScope:
+    %empty                          {
+      // debugPrint("CloseScope");
+      close_scope();
+    };
+
+IfExp:
+    IF LPAREN Exp RPAREN            {
+      // debugPrint("IfExp IF LPAREN Exp RPAREN");
+      $$.NODE = new IfExp($3);
+      table.open_scope();
+    };
+
+WhileIn:
+    %empty                          {
+      while_scope_count++;
+    };
+
+WhileOut:
+    %empty                          {
+      while_scope_count--;
+    };
+
+WhileTypeCheck:
+   WHILE LPAREN Exp RPAREN          {
+      if ( $3.TYPE != TYPE_BOOL) {
+        err(output::errorMismatch, yylineno);
+      }
+   };
+
+Statement:
+    /* For if () {}, two scopes should be opened */
+    OpenScope LBRACE Statements RBRACE CloseScope                                    {
+      // debugPrint("Statement LBRACE Statements RBRACE");
+      $$ = $2;
+    }
+    | Type ID SC                                                {
+      // debugPrint("Statement Type ID SC");
+      $2.TYPE = $1.TYPE;
+      variable_init($2,true);
+    }
+    | Type ID ASSIGN Exp SC                                     {
+      // debugPrint("Statement Type ID ASSIGN Exp SC");
+      $2.TYPE = $1.TYPE;
+      variable_init($2,true);
+      assign_value($2,$4);
+    }
+    | ID ASSIGN Exp SC                                          {
+      // debugPrint("Statement ID ASSIGN Exp SC");
+      assign_value($1,$3);
+    }
+    | Call SC                                                   {}
+    | RETURN SC                                                 {
+      // debugPrint("Statement RETURN SC");
+      return_value_check(TYPE_VOID);
+    }
+    | RETURN Exp SC                                             {
+      // debugPrint("Statement RETURN Exp SC");
+      return_value_check($2.TYPE);
+    }
+    | IfExp Statement %prec NOELSE CloseScope               {
+      // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
+    }
+    | IfExp Statement CloseScope ELSE Statement %prec ELSE           {}
+    | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
+    | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
+    | BREAK SC                                                  {
+      if (while_scope_count <= 0) {
+        err(output::errorUnexpectedBreak, yylineno);
+      }
+    }
+    | CONTINUE SC                                               {
+      if (while_scope_count <= 0) {
+        err(output::errorUnexpectedContinue, yylineno);
+      }
+    };
+
+Call:
+    ID LPAREN ExpList RPAREN        {
+      // debugPrint("Call ID LPAREN ExpList RPAREN");
+      $$.NODE = new Call($1,$3);
+      $$.TYPE = $$.NODE->get_type();
+    }
+    |   ID LPAREN RPAREN            {
+      // debugPrint("Call ID LPAREN RPAREN");
+      $$.NODE = new Call($1);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    };
+
+ExpList:
+    Exp                             {
+      // debugPrint("ExpList Exp");
+      $$.NODE = new ExpList($1);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    /* Reverse Explint and Exp */
+    | ExpList COMMA Exp             {
+      // debugPrint("ExpList Exp COMMA ExpList");
+      $$.NODE = new ExpList($1, $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    };
+
+Type:
+    INT                             {
+      // debugPrint("Type INT");
+      $$.TYPE = TYPE_INT;
+    }
+    |   BYTE                        {
+      $$.TYPE = TYPE_BYTE;
+    }
+    |   BOOL                        {
+      $$.TYPE = TYPE_BOOL;
+    };
+
+Exp:
+    LPAREN Exp RPAREN               {
+      // debugPrint("Exp LPAREN Exp RPAREN");
+      $$ = $2;
+    }
+    | Exp PLUS_MINUS Exp            {
+      // debugPrint("Exp Exp PLUS_MINUS Exp");
+      $$.NODE = new Exp($1, *$2.STRING, $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    | Exp MUL_DIV Exp               {
+      // debugPrint("Exp Exp MUL_DIV Exp");
+      $$.NODE = new Exp($1, *$2.STRING, $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    | ID                            {
+      // debugPrint("Exp ID");
+      $$.NODE = new Exp(*$1.STRING);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE ->get_type();
+    }
+    | Call                          {
+      // debugPrint("Exp Call");
+      $$ = $1;
+    }
+    | NUM                           {
+      $$.TYPE = TYPE_INT;
+      $$.INT = $1.INT;
+    }
+    | NUM B                         {
+      $$.TYPE = TYPE_BYTE;
+      $$.INT = $1.INT;
+      if ($1.INT > INT_MAX) {
+        auto s = static_cast<ostringstream*>( &(ostringstream() << $1.INT) )->str();
+        err(output::errorByteTooLarge, yylineno, s);
+      }
+    }
+    | STRING                        {
+      $$.TYPE = TYPE_STRING;
+      $$.INT=1;
+      $$.STRING = $1.STRING;
+    }
+    | TRUE                          {
+      $$.TYPE = TYPE_BOOL;
+      $$.INT= 1;
+    }
+    | FALSE                         {
+      $$.TYPE = TYPE_BOOL;
+      $$.INT= 0;
+    }
+    | NOT Exp                       {
+      $$.TYPE = TYPE_BOOL;
+      $$.INT = !$1.INT;
+    }
+    | Exp AND Exp                   {
+      $$.NODE = new Exp($1, "and", $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    | Exp OR Exp                    {
+      $$.NODE = new Exp($1, "or", $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    | Exp EQ_RELOP Exp              {
+      // debugPrint("Exp EQ_RELOP Exp");
+      $$.NODE = new Exp($1, *$2.STRING, $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    }
+    | Exp RELOP Exp                 {
+      // debugPrint("Exp Exp RELOP Exp");
+      $$.NODE = new Exp($1, *$2.STRING, $3);
+      $$.INT = $$.NODE->get_value();
+      $$.TYPE = $$.NODE->get_type();
+    };
+%%
+
+int main() {
+    yyparse();
+    close_program();
+    return 0;
+}
+
+void yyerror(char const* s) {
+    output::errorSyn(yylineno);
+    exit(1);
+}
+
+void debugPrint(char const* rule){
+    debug("semantic rule", rule);
+}
