@@ -1,13 +1,24 @@
 #include "generator.hpp"
-#include "bp.hpp"
+#include "llvm_code.hpp"
 
 Generator *Generator::instance = Generator::getInstance();
-
-static const string print_llvm("print");
 
 void Generator::generate()
 {
   debugGenerator("generate");
-  CodeBuffer::instance().emit(print_llvm);
+  CodeBuffer::instance().emitGlobal(printf_llvm);
+  CodeBuffer::instance().emitGlobal(print_llvm);
+  CodeBuffer::instance().emit(main_llvm);
+
+  CodeBuffer::instance().printGlobalBuffer();
   CodeBuffer::instance().printCodeBuffer();
+}
+
+void Generator::func_init(atom_t &atom)
+{
+  string llvm;
+  string func_id = *atom.STRING;
+  debugGenerator("Generate Func Init");
+  cout << func_id << endl;
+  CodeBuffer::instance().emit("\n\n@" + func_id + "\n");
 }

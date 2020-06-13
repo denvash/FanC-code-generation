@@ -3,11 +3,13 @@
 
 #include "parser.hpp"
 #include "register_handler.hpp"
+#include "bp.hpp"
 
 class Generator
 {
 private:
   static Generator *instance;
+  static CodeBuffer *code_buffer;
   map<int, RegisterHandler> register_map;
   map<int, vector<int>> true_lists;
   map<int, vector<int>> continue_lists;
@@ -33,6 +35,7 @@ public:
   }
 
   void generate();
+  void func_init(atom_t &atom);
 };
 
 inline void debugGenerator(const char *text)

@@ -12,6 +12,8 @@
   using namespace std;
   void debugPrint(char const*);
   void yyerror(char const*);
+
+  Generator* GENERATOR;
 %}
 %token VOID INT BYTE B BOOL TRUE FALSE RETURN IF WHILE BREAK CONTINUE SC COMMA LBRACE RBRACE ID NUM STRING
 /* https://introcs.cs.princeton.edu/java/11precedence/ */
@@ -51,6 +53,7 @@ FuncDecl:
       // Opens scope before declaring formals
       table.open_scope();
       declare_formals($4);
+      GENERATOR->func_init($2);
     }
     LBRACE Statements RBRACE CloseScope {
       // debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
@@ -306,9 +309,10 @@ Exp:
 %%
 
 int main() {
+    GENERATOR = Generator::getInstance();
     yyparse();
     close_program();
-    Generator::getInstance()->generate();
+    GENERATOR->generate();
     return 0;
 }
 
