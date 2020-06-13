@@ -4,6 +4,8 @@
   #include <string>
   #include <iostream>
   #include <sstream>
+  #include "register_handler.hpp"
+  #include "generator.hpp"
   #define INT_MAX 255
   extern int yylex();
   extern int yylineno;
@@ -306,6 +308,7 @@ Exp:
 int main() {
     yyparse();
     close_program();
+    Generator::getInstance()->generate();
     return 0;
 }
 
