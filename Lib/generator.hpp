@@ -36,6 +36,8 @@ public:
 
   void generate();
   void func_init(atom_t &atom);
+  void func_end();
+  void func_call(atom_t &target, atom_t &source);
 };
 
 inline void debugGenerator(const char *text)

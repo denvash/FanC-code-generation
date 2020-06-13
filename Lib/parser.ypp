@@ -57,6 +57,7 @@ FuncDecl:
     }
     LBRACE Statements RBRACE CloseScope {
       // debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
+      GENERATOR->func_end();
     };
 
 RetType:

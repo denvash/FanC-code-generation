@@ -16,9 +16,16 @@ void Generator::generate()
 
 void Generator::func_init(atom_t &atom)
 {
-  string llvm;
   string func_id = *atom.STRING;
-  debugGenerator("Generate Func Init");
-  cout << func_id << endl;
-  CodeBuffer::instance().emit("\n\n@" + func_id + "\n");
+  debugGenerator("Func Init");
+}
+
+void Generator::func_end()
+{
+  debugGenerator("Func End");
+}
+
+void Generator::func_call(atom_t &target, atom_t &y_function_id)
+{
+  debugGenerator("Func Call");
 }
