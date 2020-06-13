@@ -27,31 +27,79 @@ Use `Test/in` folder for input files and `Test/res` for expecting results.
 Input FanC program to be analyzed:
 
 ```java
-void printOk(bool isOk) {
-    if (isOk) print("ok");
+void printByValue(bool val) {
+  if (val)
+    print("val is true");
+  else {
+    print("val is false");
+  }
 }
 
 void main() {
-    int x = 4;
-    byte y = 100 b;
-    printOk(x>y);
-    int z;
+  printByValue(true);
+  printByValue(false);
+
+  if(true)
+    {
+        print("true");
+    }
+
+    if(false or false and  true)
+    {
+        print("true");
+    }
 }
 ```
 
 Outputs:
 
-```text
----end scope---
----end scope---
-isOk BOOL -1
----end scope---
-x INT 0
-y BYTE 1
-z INT 2
----end scope---
-print (STRING)->VOID 0
-printi (INT)->VOID 0
-printOk (BOOL)->VOID 0
-main ()->VOID 0
+```console
+val is true
+val is false
+true
+```
+
+Input:
+
+```java
+int fib(byte n) {
+    if (n == 0 or n == 1) return 1;
+    return fib(n-1b) + fib(n-2b);
+}
+
+void main() {
+    byte i = 0b;
+    while (i < 10) {
+        printi(fib(i));
+        if (i+1 < 10)
+            print("*");
+        i = i + 1b;
+    }
+    print("*");
+}
+```
+
+Outputs:
+
+```
+1
+*
+1
+*
+2
+*
+3
+*
+5
+*
+8
+*
+13
+*
+21
+*
+34
+*
+55
+*
 ```

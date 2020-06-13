@@ -7,5 +7,6 @@
 build
 *.output
 parser
+generator
 Tests/out
 Tests/exclude
