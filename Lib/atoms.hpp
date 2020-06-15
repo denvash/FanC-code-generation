@@ -2,6 +2,7 @@
 #include "table.hpp"
 #include "err.hpp"
 #include "output.hpp"
+#include "bp.hpp"
 #include <string>
 #include <stdlib.h>
 
@@ -36,6 +37,9 @@ public:
   int value;
   string id;
   TypeEnum type;
+  vector<pair<int,BranchLabelIndex>> trueList;
+  vector<pair<int,BranchLabelIndex>> falseList;
+
   Exp(string identifier)
   {
     if (!table.is_var_exists(identifier))
@@ -74,6 +78,9 @@ public:
 class IfExp : public Node
 {
 public:
+    vector<pair<int,BranchLabelIndex>> trueList;
+    vector<pair<int,BranchLabelIndex>> falseList;
+
   IfExp(atom_t exp)
   {
     if (exp.TYPE != TYPE_BOOL)
