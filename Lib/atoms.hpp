@@ -2,6 +2,7 @@
 #include "table.hpp"
 #include "err.hpp"
 #include "output.hpp"
+#include "bp.hpp"
 #include <string>
 #include <stdlib.h>
 
