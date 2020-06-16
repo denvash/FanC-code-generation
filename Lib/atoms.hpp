@@ -37,8 +37,6 @@ public:
   int value;
   string id;
   TypeEnum type;
-  vector<pair<int,BranchLabelIndex>> trueList;
-  vector<pair<int,BranchLabelIndex>> falseList;
 
   Exp(string identifier)
   {
@@ -78,9 +76,6 @@ public:
 class IfExp : public Node
 {
 public:
-    vector<pair<int,BranchLabelIndex>> trueList;
-    vector<pair<int,BranchLabelIndex>> falseList;
-
   IfExp(atom_t exp)
   {
     if (exp.TYPE != TYPE_BOOL)

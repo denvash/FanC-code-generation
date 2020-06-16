@@ -2,16 +2,17 @@
 #include "llvm_code.hpp"
 
 Generator *Generator::instance = Generator::getInstance();
+#define _B (CodeBuffer::instance())
 
 void Generator::generate()
 {
   debugGenerator("generate");
-  CodeBuffer::instance().emitGlobal(printf_llvm);
-  CodeBuffer::instance().emitGlobal(print_llvm);
-  CodeBuffer::instance().emit(main_llvm);
+  _B.emitGlobal(printf_llvm);
+  _B.emitGlobal(print_llvm);
+  _B.emit(main_llvm);
 
-  CodeBuffer::instance().printGlobalBuffer();
-  CodeBuffer::instance().printCodeBuffer();
+  _B.printGlobalBuffer();
+  _B.printCodeBuffer();
 }
 
 void Generator::func_init(atom_t &atom)
