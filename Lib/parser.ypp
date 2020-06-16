@@ -47,7 +47,7 @@ Funcs :
 
 FuncDecl:
     RetType ID LPAREN Formals RPAREN {
-      // debugPrint("FuncDecl RetType ID LPAREN Formals RPAREN");
+      debugPrint("FuncDecl RetType ID LPAREN Formals RPAREN");
       $2.TYPE = $1.TYPE;
       func_init($2,$4);
       // Opens scope before declaring formals
@@ -56,8 +56,8 @@ FuncDecl:
       _G->func_init($2);
     }
     LBRACE Statements RBRACE CloseScope {
-      // debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
-      _G->func_end();
+      debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
+      _G->func_end($1,$8);
     };
 
 RetType:
@@ -93,7 +93,7 @@ FormalsList:
 
 FormalDecl:
     Type ID                         {
-      // debugPrint("FormalDecl Type ID");
+      debugPrint("FormalDecl Type ID");
       $$.TYPE = $1.TYPE;
       $$.STRING = $2.STRING;
     };
@@ -165,7 +165,6 @@ Statement:
     }
     | Call SC                                                   {
       debugPrint("Call SC");
-      _G->func_call();
     }
     | RETURN SC                                                 {
       // debugPrint("Statement RETURN SC");
@@ -194,12 +193,13 @@ Statement:
 
 Call:
     ID LPAREN ExpList RPAREN        {
-      // debugPrint("Call ID LPAREN ExpList RPAREN");
+      debugPrint("Call ID LPAREN ExpList RPAREN");
       $$.NODE = new Call($1,$3);
       $$.TYPE = $$.NODE->get_type();
+      _G->func_call($$,$1,$3);
     }
     |   ID LPAREN RPAREN            {
-      // debugPrint("Call ID LPAREN RPAREN");
+      debugPrint("Call ID LPAREN RPAREN");
       $$.NODE = new Call($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
@@ -211,6 +211,8 @@ ExpList:
       $$.NODE = new ExpList($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      // TODO: short-circuit
+      // _G->eval_boolean($1);
     }
     /* Reverse Explint and Exp */
     | ExpList COMMA Exp             {
@@ -272,7 +274,7 @@ Exp:
       }
     }
     | STRING                        {
-      debugPrint("Exp STRING");
+      // debugPrint("Exp STRING");
       $$.TYPE = TYPE_STRING;
       $$.INT = 1;
       $$.STRING = $1.STRING;
@@ -327,5 +329,5 @@ void yyerror(char const* s) {
 }
 
 void debugPrint(char const* rule){
-    debug("semantic rule", rule);
+    debug("Semantics", rule);
 }

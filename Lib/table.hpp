@@ -2,6 +2,7 @@
 #define TABLE_HPP
 
 #include "types.hpp"
+#include "bp.hpp"
 #include <iostream>
 #include <map>
 #include <stack>
@@ -25,6 +26,7 @@ typedef struct
   int offset;
   string name;
   var_info_t type_info;
+  vector<pair<int, BranchLabelIndex>> next_list;
 } table_entry_t;
 
 typedef struct table_t

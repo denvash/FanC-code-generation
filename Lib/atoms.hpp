@@ -2,7 +2,6 @@
 #include "table.hpp"
 #include "err.hpp"
 #include "output.hpp"
-#include "bp.hpp"
 #include <string>
 #include <stdlib.h>
 
@@ -25,6 +24,7 @@ public:
 
 struct atom_t
 {
+  string VAR_ID;
   int INT;
   TypeEnum TYPE;
   string *STRING;

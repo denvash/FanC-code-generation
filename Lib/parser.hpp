@@ -9,6 +9,7 @@
 using namespace std;
 #define YYSTYPE atom_t
 extern int while_scope_count;
+extern string type_to_string_map[HELP_TYPE_NUM];
 
 void assign_value(atom_t y_identifier, atom_t y_expression);
 void close_program();

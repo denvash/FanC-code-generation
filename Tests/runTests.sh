@@ -14,7 +14,7 @@ outFolder=${testFolder}/out
 resultFolder=${testFolder}/res
 
 inExt=\.in
-outExt=\.out
+outExt=\.ll
 
 totalTests=`ls -1q ${inFolder} | wc -l`
 
@@ -33,7 +33,7 @@ for filePath in ${inFolder}/*.in; do
 done
 
 # Diff
-for filePath in ${outFolder}/*.out; do
+for filePath in ${outFolder}/*.ll; do
 #    dos2unix ${filePath}
 
 # get the file name without extension
