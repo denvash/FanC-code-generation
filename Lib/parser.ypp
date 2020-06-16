@@ -12,8 +12,8 @@
   using namespace std;
   void debugPrint(char const*);
   void yyerror(char const*);
-
-  Generator* GENERATOR;
+  #define _B (CodeBuffer::instance())
+  #define _G (Generator::getInstance())
 %}
 %token VOID INT BYTE B BOOL TRUE FALSE RETURN IF WHILE BREAK CONTINUE SC COMMA LBRACE RBRACE ID NUM STRING
 /* https://introcs.cs.princeton.edu/java/11precedence/ */
@@ -53,11 +53,11 @@ FuncDecl:
       // Opens scope before declaring formals
       table.open_scope();
       declare_formals($4);
-      GENERATOR->func_init($2);
+      _G->func_init($2);
     }
     LBRACE Statements RBRACE CloseScope {
       // debugPrint("FuncDecl Continue: LBRACE Statements RBRACE CloseScope");
-      GENERATOR->func_end();
+      _G->func_end();
     };
 
 RetType:
@@ -163,7 +163,10 @@ Statement:
       // debugPrint("Statement ID ASSIGN Exp SC");
       assign_value($1,$3);
     }
-    | Call SC                                                   {}
+    | Call SC                                                   {
+      debugPrint("Call SC");
+      _G->func_call();
+    }
     | RETURN SC                                                 {
       // debugPrint("Statement RETURN SC");
       return_value_check(TYPE_VOID);
@@ -204,7 +207,7 @@ Call:
 
 ExpList:
     Exp                             {
-      // debugPrint("ExpList Exp");
+      debugPrint("ExpList Exp");
       $$.NODE = new ExpList($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
@@ -269,17 +272,19 @@ Exp:
       }
     }
     | STRING                        {
+      debugPrint("Exp STRING");
       $$.TYPE = TYPE_STRING;
-      $$.INT=1;
+      $$.INT = 1;
       $$.STRING = $1.STRING;
+      _G->gen_string($$);
     }
     | TRUE                          {
       $$.TYPE = TYPE_BOOL;
-      $$.INT= 1;
+      $$.INT = 1;
     }
     | FALSE                         {
       $$.TYPE = TYPE_BOOL;
-      $$.INT= 0;
+      $$.INT = 0;
     }
     | NOT Exp                       {
       $$.TYPE = TYPE_BOOL;
@@ -310,10 +315,9 @@ Exp:
 %%
 
 int main() {
-    GENERATOR = Generator::getInstance();
     yyparse();
     close_program();
-    GENERATOR->generate();
+    _G->generate();
     return 0;
 }
 

@@ -17,12 +17,24 @@ private:
   map<int, vector<int>> next_lists;
   map<int, string> quad_list;
 
+  size_t total_vars;
+
   Generator() = default;
 
-  void emit_global_string(const string &name, const string &str);
-  void emit_global_string(int id, const string &str);
-  void sp_pop(string popped, bool inc);
-  void sp_push(string pushed, bool dec);
+  size_t _gen_id()
+  {
+    return total_vars++;
+  };
+
+  string _generate_var()
+  {
+    return "%var" + std::to_string(_gen_id());
+  };
+
+  string _gen_string_var()
+  {
+    return "@.str_" + std::to_string(_gen_id());
+  };
 
 public:
   static Generator *getInstance()
@@ -37,12 +49,13 @@ public:
   void generate();
   void func_init(atom_t &atom);
   void func_end();
-  void func_call(atom_t &target, atom_t &source);
+  void func_call();
+  void gen_string(atom_t &atom);
 };
 
 inline void debugGenerator(const char *text)
 {
-  debug("parser", text);
+  debug("Generator", text);
 }
 
 #endif
