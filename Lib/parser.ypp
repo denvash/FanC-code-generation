@@ -261,6 +261,7 @@ Exp:
       $$.NODE = new Exp($1, *$2.STRING, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_binop($$, $1, $2 ,$3);
     }
     | ID                            {
       // debugPrint("Exp ID");

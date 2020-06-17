@@ -5,6 +5,7 @@ Generator *Generator::instance = Generator::getInstance();
 #define _B (CodeBuffer::instance())
 #define PRINT_FUNC "print"
 #define PRINTI_FUNC "printi"
+#define PLACE_VOID "void"
 
 void Generator::generate()
 {
@@ -43,7 +44,7 @@ void Generator::func_init(atom_t &$$)
   }
   for (auto i = 0; i < size; i++)
   {
-    auto var = _generate_var();
+    auto var = _gen_var_llvm();
     _B.emit(declare_var_llvm(var, size_str, offset));
     _B.emit(store_arg_llvm(to_string(i), size_str));
   }
@@ -81,7 +82,7 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
     _B.emit(call_print_llvm(str_len, var_id));
 
-    $$.place = "void";
+    $$.place = PLACE_VOID;
     return;
   }
 
@@ -96,10 +97,19 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   /* Cut the last "," */
   args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
 
+  auto call_exp_llvm = call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm);
+
   if (function_type == TYPE_VOID)
   {
-    _B.emit(call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm));
-    $$.place = "void";
+    _B.emit(call_exp_llvm);
+    $$.place = PLACE_VOID;
+  }
+  /* There is a return type */
+  else
+  {
+    auto var = _gen_string_var_id_llvm();
+    _B.emit(assign_to_var_llvm(var, call_exp_llvm));
+    $$.place = PLACE_VOID;
   }
 }
 
@@ -111,7 +121,7 @@ void Generator::gen_string(atom_t &atom)
 
   /* full value comes as "STRING" and we want only the value: STRING */
   auto str_value = str_full_value.substr(1, str_full_value.length() - 2);
-  atom.VAR_ID = _gen_string_var_id();
+  atom.VAR_ID = _gen_string_var_id_llvm();
   auto str_len = to_string(str_value.length() + 1);
   _B.emitGlobal(store_string_llvm(atom.VAR_ID, str_len, str_value));
 }
@@ -123,4 +133,33 @@ void Generator::gen_bp_label(atom_t &$$)
   auto label = _B.genLabel();
   _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
   $$.quad = label;
+}
+
+void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
+{
+  auto op = *(atom_op.STRING);
+  debugGenerator("BINOP", op);
+  auto var = _gen_var_llvm();
+
+  if (op == "/")
+  {
+    auto zero_var_llvm = _gen_var_llvm();
+    auto left_value = to_string(atom_left.INT);
+    auto right_value = to_string(atom_right.INT);
+
+    _B.emit(zero_div_check_llvm(zero_var_llvm, right_value));
+    auto zero_bp = _B.emit(branch_conditional_to_bp_llvm(zero_var_llvm));
+
+    auto error_label = _B.genLabel();
+    _B.emit(call_print_zero_div_llvm);
+
+    auto unused_bp = _B.emit(branch_to_bp_llvm);
+
+    auto success_label = _B.genLabel();
+    _B.emit(op_div_llvm(var, "i32", left_value, right_value));
+
+    _B.bpatch(_B.makelist({zero_bp, SECOND}), success_label);
+    _B.bpatch(_B.makelist({zero_bp, FIRST}), error_label);
+    _B.bpatch(_B.makelist({unused_bp, FIRST}), success_label);
+  }
 }

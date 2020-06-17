@@ -19,12 +19,12 @@ private:
     return total_vars++;
   };
 
-  string _generate_var()
+  string _gen_var_llvm()
   {
     return "%var" + std::to_string(_gen_id());
   };
 
-  string _gen_string_var_id()
+  string _gen_string_var_id_llvm()
   {
     return "@.str_" + std::to_string(_gen_id());
   };
@@ -45,6 +45,7 @@ public:
   void func_call(atom_t &$$, atom_t &id_atom, atom_t &exp_list_atom);
   void gen_string(atom_t &$$);
   void gen_bp_label(atom_t &$$);
+  void gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right);
 };
 
 inline void debugGenerator(string text)

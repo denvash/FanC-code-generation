@@ -34,6 +34,10 @@ static const string ret_void_llvm = R"(ret void)";
 static const string ret_success_llvm = R"(ret i32 0)";
 static const string scope_end_llvm = R"(})";
 
+static const string call_print_zero_div_llvm = R"(
+call i32 (i8*, ...) @printf(i8* getelementptr([24 x i8], [24 x i8]* @.zero_div, i32 0, i32 0))
+call void @exit(i32 0))";
+
 string call_print_llvm(string len, string id)
 {
   /* call void @print (i8* getelementptr ([13 x i8], [13 x i8]* @msg, i32 0, i32 0)) */
@@ -78,4 +82,24 @@ string call_function_llvm(bool is_void_type, string name, string args)
 {
   string return_type_llvm = is_void_type ? "void" : "i32";
   return "call " + return_type_llvm + " @" + name + "(" + args + ")";
+}
+
+string assign_to_var_llvm(string var, string call_llvm)
+{
+  return var + " = " + call_llvm;
+}
+
+string zero_div_check_llvm(string var, string value)
+{
+  return var + " = icmp eq i32 " + value + ", 0";
+}
+
+string branch_conditional_to_bp_llvm(string var)
+{
+  return "br i1 " + var + " , label @ , label @";
+}
+
+string op_div_llvm(string var, string type, string left, string right)
+{
+  return var + " = sdiv " + type + " " + left + ", " + right;
 }
