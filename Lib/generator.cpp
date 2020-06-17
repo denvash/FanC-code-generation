@@ -28,25 +28,27 @@ void Generator::func_init(atom_t &$$)
   // Function must exists in this point.
   auto entry = table.get_last_function_in_scope();
   auto type_info = entry->type_info;
-  auto size = type_info.size;
+
+  auto total_args = table.get_total_args(func_id);
+
   auto type = type_info.type;
   auto arg_types = type_info.arg_types;
   auto offset = entry->offset;
-  auto size_str = to_string(size);
 
-  // debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + size_str);
+  auto total_args_str = to_string(total_args);
+  debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + total_args_str);
 
-  _B.emit(define_func_llvm(type == TYPE_VOID, size, func_id));
+  _B.emit(define_func_llvm(type == TYPE_VOID, total_args, func_id));
 
-  if (size > 0)
+  if (total_args > 0)
   {
-    _B.emit(define_args_llvm(size_str));
+    _B.emit(define_args_llvm(total_args_str));
   }
-  for (auto i = 0; i < size; i++)
+  for (auto i = 0; i < total_args; i++)
   {
     auto var = _gen_var_llvm();
-    _B.emit(declare_var_llvm(var, size_str, offset));
-    _B.emit(store_arg_llvm(to_string(i), size_str));
+    _B.emit(declare_var_llvm(var, total_args_str, offset));
+    _B.emit(store_arg_llvm(to_string(i), total_args_str));
   }
 }
 
@@ -138,7 +140,7 @@ void Generator::gen_bp_label(atom_t &$$)
 void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
 {
   auto op = *(atom_op.STRING);
-  debugGenerator("BINOP", op);
+  // debugGenerator("BINOP", op);
   auto var = _gen_var_llvm();
 
   if (op == "/")

@@ -16,6 +16,7 @@ using namespace std;
 typedef struct
 {
   bool is_func;
+  // size of offset
   int size;
   TypeEnum type;
   vector<TypeEnum> arg_types;
@@ -180,6 +181,18 @@ public:
       return vector<TypeEnum>(1, TYPE_UNDEFINED);
     }
     return this->get_entry(identifier).type_info.arg_types;
+  }
+
+  int get_total_args(const string &identifier)
+  {
+    auto arg_types = get_function_args(identifier);
+    auto size = arg_types.size();
+    if (size > 1)
+    {
+      return size;
+    }
+    auto first = arg_types.front();
+    return first == TYPE_UNDEFINED || first == TYPE_VOID ? 0 : 1;
   }
 
   TypeEnum get_function_type(const string &identifier)
