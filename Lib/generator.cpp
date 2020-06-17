@@ -36,9 +36,10 @@ void Generator::func_init(atom_t &$$)
   auto offset = entry->offset;
 
   auto total_args_str = to_string(total_args);
-  debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + total_args_str);
+  // debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + total_args_str);
 
   _B.emit(define_func_llvm(type == TYPE_VOID, total_args, func_id));
+  _B.emit(func_entry_llvm);
 
   if (total_args > 0)
   {
@@ -47,8 +48,8 @@ void Generator::func_init(atom_t &$$)
   for (auto i = 0; i < total_args; i++)
   {
     auto var = _gen_var_llvm();
-    _B.emit(declare_var_llvm(var, total_args_str, offset));
-    _B.emit(store_arg_llvm(to_string(i), total_args_str));
+    _B.emit(declare_var_llvm(var, total_args_str, (i + 1) * (-1)));
+    _B.emit(store_arg_llvm(to_string(i), var));
   }
 }
 

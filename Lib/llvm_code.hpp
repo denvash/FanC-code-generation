@@ -38,6 +38,9 @@ static const string call_print_zero_div_llvm = R"(
 call i32 (i8*, ...) @printf(i8* getelementptr([24 x i8], [24 x i8]* @.zero_div, i32 0, i32 0))
 call void @exit(i32 0))";
 
+static const string func_entry_llvm = R"(entry:
+%fp = alloca [50 x i32])";
+
 string call_print_llvm(string len, string id)
 {
   /* call void @print (i8* getelementptr ([13 x i8], [13 x i8]* @msg, i32 0, i32 0)) */
@@ -53,14 +56,12 @@ string define_func_llvm(bool is_void_type, int size, string id)
     args = args + "i32 ,";
   }
   args = args.substr(0, args.length() - 1);
-  return "define " + type + " @" + id + "(" + args + ") {\n\
-entry:\n\
-%fp = alloca [50 x i32]\n";
+  return "define " + type + " @" + id + "(" + args + ") {";
 }
 
-string declare_var_llvm(string var, string size, int offset)
+string declare_var_llvm(string var, string size, int pointer)
 {
-  return var + (offset >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(offset) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((offset + 1) * (-1))));
+  return var + (pointer >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(pointer) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((pointer + 1) * (-1))));
 }
 
 string define_args_llvm(string size)
@@ -70,7 +71,7 @@ string define_args_llvm(string size)
 
 string store_arg_llvm(string id, string var)
 {
-  return " store i32 %" + id + " , i32*" + var;
+  return "store i32 %" + id + " , i32* " + var;
 }
 
 string store_string_llvm(string id, string len, string value)
