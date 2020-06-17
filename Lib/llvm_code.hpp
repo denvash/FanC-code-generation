@@ -16,8 +16,8 @@ static const string zero_div_llvm = R"(
 /* print.ll */
 static const string print_llvm = R"(
 @.str_specifier = constant [4 x i8] c "%s\0A\00"
-define void @print(i8 *) {
-  call i32(i8 *, ...) @printf(i8 * getelementptr([4 x i8], [4 x i8] * @.str_specifier, i32 0, i32 0), i8 * % 0)
+define void @print (i8 *) {
+  call i32(i8 *, ...) @printf(i8 * getelementptr([4 x i8], [4 x i8] * @.str_specifier, i32 0, i32 0), i8 * %0)
   ret void
 })";
 
@@ -29,22 +29,15 @@ define void @printi (i32) {
   ret void
 })";
 
-static const string branch_to_bp_llvm = R"(
-br label @)";
-
-static const string ret_void_llvm = R"(
-ret void)";
-
-static const string ret_success_llvm = R"(
-ret i32 0)";
-
-static const string scope_end_llvm = R"(
-})";
+static const string branch_to_bp_llvm = R"(br label @)";
+static const string ret_void_llvm = R"(ret void)";
+static const string ret_success_llvm = R"(ret i32 0)";
+static const string scope_end_llvm = R"(})";
 
 string call_print_llvm(string len, string id)
 {
-  /* call void @print(i8* getelementptr ([13 x i8], [13 x i8]* @msg, i32 0, i32 0)) */
-  return "call void @print(i8* getelementptr ([" + len + " x i8], [" + len + " x i8]* " + id + ", i32 0, i32 0))";
+  /* call void @print (i8* getelementptr ([13 x i8], [13 x i8]* @msg, i32 0, i32 0)) */
+  return "call void @print (i8* getelementptr ([" + len + " x i8], [" + len + " x i8]* " + id + ", i32 0, i32 0))";
 }
 
 string define_func_llvm(bool is_void_type, int size, string id)

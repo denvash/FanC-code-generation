@@ -100,10 +100,21 @@ FormalDecl:
 
 Statements:
     Statement                       {
-      // debugPrint("Statements Statement");
+      debugPrint("Statements Statement");
+      $$.next_list = $1.next_list;
+      $$.break_list = $1.break_list;
+      $$.continue_list = $1.continue_list;
     }
-    | Statements Statement          {
-      // debugPrint("Statements Statements Statement");
+    | Statements MarkerLabel Statement          {
+      debugPrint("Statements Statements Statement");
+      $$.next_list = $3.next_list;
+      $$.break_list = _B.merge($1.break_list,$3.break_list);
+      $$.continue_list = _B.merge($1.continue_list,$3.continue_list);
+    };
+
+MarkerLabel:
+    %empty                            {
+      _G->gen_bp_label($$);
     };
 
 OpenScope:
@@ -145,7 +156,7 @@ WhileTypeCheck:
 Statement:
     /* For if () {}, two scopes should be opened */
     OpenScope LBRACE Statements RBRACE CloseScope                                    {
-      // debugPrint("Statement LBRACE Statements RBRACE");
+      debugPrint("Statement LBRACE Statements RBRACE");
       $$ = $2;
     }
     | Type ID SC                                                {

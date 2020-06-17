@@ -58,7 +58,7 @@ void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
   auto label = _B.genLabel();
 
   _B.bpatch(_B.makelist({branch_to_bp, FIRST}), label);
-  _B.bpatch(type_info->next_list, label);
+  _B.bpatch(atom_statement.next_list, label);
   _B.emit(atom_id.TYPE == TYPE_VOID ? ret_void_llvm : ret_success_llvm);
   _B.emit(scope_end_llvm);
 }
@@ -89,6 +89,8 @@ void Generator::func_call(atom_t &$$, atom_t &id_atom, atom_t &exp_list_atom)
   {
     debugGenerator("Print-i func call");
   }
+
+  debugGenerator("Func Call Continue");
 }
 
 void Generator::gen_string(atom_t &atom)
@@ -102,4 +104,13 @@ void Generator::gen_string(atom_t &atom)
   atom.VAR_ID = _gen_string_var_id();
   auto str_len = to_string(str_value.length() + 1);
   _B.emitGlobal(store_string_llvm(atom.VAR_ID, str_len, str_value));
+}
+
+void Generator::gen_bp_label(atom_t &$$)
+{
+  debugGenerator("Generating BP Label");
+  auto buffer_index = _B.emit(branch_to_bp_llvm);
+  auto label = _B.genLabel();
+  _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
+  $$.VAR_ID = label;
 }

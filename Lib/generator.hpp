@@ -10,13 +10,6 @@ class Generator
 private:
   static Generator *instance;
   static CodeBuffer *code_buffer;
-  map<int, RegisterHandler> register_map;
-  map<int, vector<int>> true_lists;
-  map<int, vector<int>> continue_lists;
-  map<int, vector<int>> false_lists;
-  map<int, vector<int>> next_lists;
-  map<int, string> quad_list;
-
   size_t total_vars;
 
   Generator() = default;
@@ -51,6 +44,7 @@ public:
   void func_end(atom_t &atom_id, atom_t &atom_statement);
   void func_call(atom_t &$$, atom_t &id_atom, atom_t &exp_list_atom);
   void gen_string(atom_t &$$);
+  void gen_bp_label(atom_t &$$);
 };
 
 inline void debugGenerator(string text)

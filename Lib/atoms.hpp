@@ -2,6 +2,7 @@
 #include "table.hpp"
 #include "err.hpp"
 #include "output.hpp"
+#include "bp.hpp"
 #include <string>
 #include <stdlib.h>
 
@@ -29,6 +30,11 @@ struct atom_t
   TypeEnum TYPE;
   string *STRING;
   Node *NODE;
+  vector<pair<int, BranchLabelIndex>> next_list;
+  vector<pair<int, BranchLabelIndex>> true_list;
+  vector<pair<int, BranchLabelIndex>> false_list;
+  vector<pair<int, BranchLabelIndex>> break_list;
+  vector<pair<int, BranchLabelIndex>> continue_list;
 };
 
 class Exp : public Node
