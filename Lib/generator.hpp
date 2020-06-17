@@ -46,6 +46,7 @@ public:
   void gen_string(atom_t &$$);
   void gen_bp_label(atom_t &$$);
   void gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right);
+  void gen_assign(atom_t &, atom_t &, atom_t &, atom_t &);
 };
 
 inline void debugGenerator(string text)

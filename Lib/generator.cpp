@@ -166,3 +166,22 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     _B.bpatch(_B.makelist({unused_bp, FIRST}), success_label);
   }
 }
+
+void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, atom_t &atom_exp)
+{
+  debugGenerator("Generating Assign");
+  if (atom_assign.TYPE != TYPE_BOOL)
+  {
+    auto var = _gen_var_llvm();
+    auto atom_func = table.get_last_function_in_scope();
+    auto offset = atom_func->offset;
+    auto func_id = atom_func->name;
+    auto args_size = table.get_total_args(func_id);
+
+    _B.emit(declare_var_llvm(var, to_string(offset), args_size));
+
+    /* TODO: fix atom exp place */
+    _B.emit(store_arg_llvm(atom_exp.place, var));
+    $$.next_list = atom_exp.next_list;
+  }
+}
