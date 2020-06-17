@@ -130,7 +130,7 @@ void init_program()
 void close_scope()
 {
   // debugParser("[parser:close-scope] closing scope");
-  output::endScope();
+  // output::endScope();
   auto entries = table.get_current_inner_scope();
   for (auto i = 0; i < entries.size(); i++)
   {
@@ -153,7 +153,7 @@ void close_scope()
       auto function_return_type_str = type_to_string_map[function_entry->type_info.type];
       type_str = output::makeFunctionType(function_return_type_str, func_args);
     }
-    output::printID(id, offset, type_str);
+    // output::printID(id, offset, type_str);
   }
   table.close_scope();
 }

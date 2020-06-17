@@ -14,7 +14,8 @@ outFolder=${testFolder}/out
 resultFolder=${testFolder}/res
 
 inExt=\.in
-outExt=\.ll
+outExt=\.out
+llExt=\.ll
 
 totalTests=`ls -1q ${inFolder} | wc -l`
 
@@ -26,14 +27,16 @@ for filePath in ${inFolder}/*.in; do
 
 # get the file name without extension
     fileName=`basename ${filePath} | cut -d . -f 1`
+    outPath=${outFolder}/${fileName}${llExt}
 
 # echo ${filePath}
     echo -e "Running ${fileName}"
-    ${app} < ${filePath} > ${outFolder}/${fileName}${outExt}
+    ${app} < ${filePath} > ${outFolder}/${fileName}${llExt}
+    lli ${outPath} > ${outFolder}/${fileName}${outExt}
 done
 
 # Diff
-for filePath in ${outFolder}/*.ll; do
+for filePath in ${outFolder}/*.out; do
 #    dos2unix ${filePath}
 
 # get the file name without extension

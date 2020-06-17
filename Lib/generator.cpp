@@ -8,7 +8,7 @@ Generator *Generator::instance = Generator::getInstance();
 
 void Generator::generate()
 {
-  debugGenerator("Generating LLVM Code");
+  // debugGenerator("Generating LLVM Code");
   _B.emitGlobal(printf_llvm);
   _B.emitGlobal(print_llvm);
   _B.emitGlobal(printi_llvm);
@@ -22,7 +22,7 @@ void Generator::generate()
 void Generator::func_init(atom_t &$$)
 {
   auto func_id = *$$.STRING;
-  debugGenerator("Func Init", func_id.c_str());
+  // debugGenerator("Func Init", func_id.c_str());
 
   // Function must exists in this point.
   auto entry = table.get_last_function_in_scope();
@@ -33,7 +33,7 @@ void Generator::func_init(atom_t &$$)
   auto offset = entry->offset;
   auto size_str = to_string(size);
 
-  debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + size_str);
+  // debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + size_str);
 
   _B.emit(define_func_llvm(type == TYPE_VOID, size, func_id));
 
@@ -51,7 +51,7 @@ void Generator::func_init(atom_t &$$)
 
 void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
 {
-  debugGenerator("Func End: ", *atom_statement.STRING);
+  // debugGenerator("Func End: ", *atom_statement.STRING);
 
   auto type_info = table.get_last_function_in_scope();
   auto branch_to_bp = _B.emit(branch_to_bp_llvm);
@@ -63,18 +63,17 @@ void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
   _B.emit(scope_end_llvm);
 }
 
-void Generator::func_call(atom_t &$$, atom_t &id_atom, atom_t &exp_list_atom)
+void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 {
-  debugGenerator("Func Call");
-  auto func_name = *(id_atom.STRING);
-  auto exp_list = dynamic_cast<ExpList *>(exp_list_atom.NODE);
+  auto func_name = *(atom_id.STRING);
+  auto exp_list = dynamic_cast<ExpList *>(atom_exp_list.NODE);
 
   if (func_name == PRINT_FUNC)
   {
-    debugGenerator("Print func call");
+    // debugGenerator("Print func call");
     auto str_atom = exp_list->list.front();
     auto str_value = *(str_atom.STRING);
-    debugGenerator(str_value.c_str());
+    // debugGenerator(str_value.c_str());
 
     /* len without quotes */
     auto str_len = to_string(str_value.length() - 1);
@@ -82,22 +81,33 @@ void Generator::func_call(atom_t &$$, atom_t &id_atom, atom_t &exp_list_atom)
 
     _B.emit(call_print_llvm(str_len, var_id));
 
-    $$.VAR_ID = "void";
+    $$.place = "void";
     return;
   }
-  else if (func_name == PRINTI_FUNC)
-  {
-    debugGenerator("Print-i func call");
-  }
 
-  debugGenerator("Func Call Continue");
+  auto function_type = table.get_function_type(func_name);
+  string args_llvm = "";
+
+  for (auto &&exp_atom : exp_list->list)
+  {
+    auto expression_value = to_string(exp_atom.INT);
+    args_llvm = args_llvm + "i32 " + expression_value + ",";
+  }
+  /* Cut the last "," */
+  args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
+
+  if (function_type == TYPE_VOID)
+  {
+    _B.emit(call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm));
+    $$.place = "void";
+  }
 }
 
 void Generator::gen_string(atom_t &atom)
 {
-  debugGenerator("Generating String");
+  // debugGenerator("Generating String");
   auto str_full_value = *(atom.STRING);
-  cout << "[GenString]: " << str_full_value << endl;
+  // cout << "[GenString]: " << str_full_value << endl;
 
   /* full value comes as "STRING" and we want only the value: STRING */
   auto str_value = str_full_value.substr(1, str_full_value.length() - 2);
@@ -108,9 +118,9 @@ void Generator::gen_string(atom_t &atom)
 
 void Generator::gen_bp_label(atom_t &$$)
 {
-  debugGenerator("Generating BP Label");
+  // debugGenerator("Generating BP Label");
   auto buffer_index = _B.emit(branch_to_bp_llvm);
   auto label = _B.genLabel();
   _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
-  $$.VAR_ID = label;
+  $$.quad = label;
 }

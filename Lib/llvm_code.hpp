@@ -73,3 +73,9 @@ string store_string_llvm(string id, string len, string value)
 {
   return id + " = constant [" + len + " x i8] c\"" + value + "\\00\"";
 }
+
+string call_function_llvm(bool is_void_type, string name, string args)
+{
+  string return_type_llvm = is_void_type ? "void" : "i32";
+  return "call " + return_type_llvm + " @" + name + "(" + args + ")";
+}

@@ -1,3 +1,4 @@
+
 bool little(bool x, bool y, bool z, int a, int b1, int c, int d, int e, int f, bool w)
 {
     printi(24);

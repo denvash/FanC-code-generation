@@ -105,14 +105,14 @@ Statements:
       $$.break_list = $1.break_list;
       $$.continue_list = $1.continue_list;
     }
-    | Statements MarkerLabel Statement          {
+    | Statements M Statement          {
       debugPrint("Statements Statements Statement");
       $$.next_list = $3.next_list;
       $$.break_list = _B.merge($1.break_list,$3.break_list);
       $$.continue_list = _B.merge($1.continue_list,$3.continue_list);
     };
 
-MarkerLabel:
+M:
     %empty                            {
       _G->gen_bp_label($$);
     };

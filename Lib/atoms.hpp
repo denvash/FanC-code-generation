@@ -35,6 +35,8 @@ struct atom_t
   vector<pair<int, BranchLabelIndex>> false_list;
   vector<pair<int, BranchLabelIndex>> break_list;
   vector<pair<int, BranchLabelIndex>> continue_list;
+  string quad;
+  string place;
 };
 
 class Exp : public Node
