@@ -162,6 +162,10 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   auto left_type = atom_left.TYPE;
   auto right_type = atom_right.TYPE;
   auto can_overflow = false;
+
+  auto right_place = atom_right.place;
+  auto left_place = atom_left.place;
+
   /* Byte overflow */
   if (op != DIV && left_type == TYPE_BYTE && right_type == TYPE_BYTE)
   {
@@ -178,8 +182,7 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   if (op == DIV)
   {
     auto zero_var_llvm = _gen_var_llvm();
-
-    _B.emit(zero_div_check_llvm(zero_var_llvm, right_value));
+    _B.emit(zero_div_check_llvm(zero_var_llvm, right_place));
     auto zero_bp = _B.emit(branch_conditional_to_bp_llvm(zero_var_llvm));
 
     auto error_label = _B.genLabel();
@@ -188,23 +191,23 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     auto unused_bp = _B.emit(branch_to_bp_llvm);
 
     auto success_label = _B.genLabel();
-    _B.emit(assign_op_llvm(var, "sdiv", "i32", left_value, right_value));
+    _B.emit(assign_op_llvm(var, "sdiv", "i32", left_place, right_place));
 
     _B.bpatch(_B.makelist({zero_bp, SECOND}), success_label);
     _B.bpatch(_B.makelist({zero_bp, FIRST}), error_label);
     _B.bpatch(_B.makelist({unused_bp, FIRST}), success_label);
   }
-  if (op == MUL)
+  else if (op == MUL)
   {
-    _B.emit(assign_op_llvm(var, "mul", "i32", left_value, right_value));
+    _B.emit(assign_op_llvm(var, "mul", "i32", left_place, right_place));
   }
-  if (op == PLUS)
+  else if (op == PLUS)
   {
-    _B.emit(assign_op_llvm(var, "add", "i32", left_value, right_value));
+    _B.emit(assign_op_llvm(var, "add", "i32", left_place, right_place));
   }
-  if (op == MINUS)
+  else if (op == MINUS)
   {
-    _B.emit(assign_op_llvm(var, "sub", "i32", left_value, right_value));
+    _B.emit(assign_op_llvm(var, "sub", "i32", left_place, right_place));
   }
 
   /* Handle overflow / sign */
@@ -219,18 +222,52 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
 
 void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, atom_t &atom_exp)
 {
-  debugGenerator("Generating Assign");
-  if (atom_assign.TYPE != TYPE_BOOL)
+  if (atom_assign.TYPE == TYPE_BOOL)
   {
-    auto var = _gen_var_llvm();
-    auto atom_func = table.get_last_function_in_scope();
-    auto offset = atom_func->offset;
-    auto func_id = atom_func->name;
-    auto args_size = table.get_total_args(func_id);
+    debugGenerator("Boolean Assign");
+    return;
+  }
 
-    _B.emit(declare_var_llvm(var, to_string(offset), args_size));
+  // debugGenerator("Non Boolean Assign");
+  auto var = _gen_var_llvm();
+  auto atom_func = table.get_last_function_in_scope();
+  auto offset = atom_func->offset;
+  auto func_id = atom_func->name;
+  auto args_size = table.get_total_args(func_id);
 
-    _B.emit(store_arg_through_place_llvm(atom_exp.place, var));
-    $$.next_list = atom_exp.next_list;
+  _B.emit(declare_var_llvm(var, to_string(offset), args_size));
+
+  _B.emit(store_arg_through_place_llvm(atom_exp.place, var));
+  $$.next_list = atom_exp.next_list;
+}
+void Generator::gen_id(atom_t &$$, atom_t &atom_id)
+{
+  // debugGenerator("Generating Id");
+
+  auto source = _gen_var_llvm();
+  auto target = _gen_var_llvm();
+
+  auto entry = table.get_last_function_in_scope();
+  auto func_info = entry->type_info;
+  auto func_name = entry->name;
+  auto offset = entry->offset;
+
+  auto offset_str = to_string(offset);
+  auto args_size = table.get_total_args(func_name);
+
+  _B.emit(declare_var_llvm(source, offset_str, args_size));
+  _B.emit(load_to_register_llvm(target, source));
+  $$.place = target;
+
+  if (atom_id.TYPE == TYPE_BOOL)
+  {
+    auto target_boolean = _gen_var_llvm();
+    _B.emit(compare_boolean_llvm(target_boolean, source));
+    auto branch_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
+    auto unconditional_list = _B.makelist({branch_index, FIRST});
+    auto conditional_list = _B.makelist({branch_index, SECOND});
+
+    $$.true_list = unconditional_list;
+    $$.false_list = conditional_list;
   }
 }

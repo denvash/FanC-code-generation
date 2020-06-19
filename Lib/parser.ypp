@@ -256,6 +256,7 @@ Exp:
       $$.NODE = new Exp($1, *$2.STRING, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_binop($$, $1, $2 ,$3);
     }
     | Exp MUL_DIV Exp               {
       // debugPrint("Exp Exp MUL_DIV Exp");
@@ -269,6 +270,7 @@ Exp:
       $$.NODE = new Exp(*$1.STRING);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE ->get_type();
+      _G->gen_id($$,$1);
     }
     | Call                          {
       // debugPrint("Exp Call");

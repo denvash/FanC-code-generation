@@ -98,14 +98,14 @@ string assign_byte_llvm(string var, string value)
   return var + " = trunc i32 " + value + " to i8";
 }
 
-string zero_div_check_llvm(string var, string value)
+string zero_div_check_llvm(string target, string source)
 {
-  return var + " = icmp eq i32 " + value + ", 0";
+  return target + " = icmp eq i32 " + source + ", 0";
 }
 
-string branch_conditional_to_bp_llvm(string var)
+string branch_conditional_to_bp_llvm(string target)
 {
-  return "br i1 " + var + " , label @ , label @";
+  return "br i1 " + target + " , label @ , label @";
 }
 
 string assign_op_llvm(string var, string op, string type, string left, string right)
@@ -115,4 +115,13 @@ string assign_op_llvm(string var, string op, string type, string left, string ri
 string assign_byte_overflow_llvm(string var, string value)
 {
   return var + " = zext i8 " + value + " to i32";
+}
+
+string load_to_register_llvm(string target, string source)
+{
+  return target + " = load i32, i32* " + source;
+}
+string compare_boolean_llvm(string target, string source)
+{
+  return target + " = icmp ne i32 0, " + source;
 }
