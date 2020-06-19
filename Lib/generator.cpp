@@ -7,6 +7,20 @@ Generator *Generator::instance = Generator::getInstance();
 #define PRINTI_FUNC "printi"
 #define PLACE_VOID "void"
 
+#define MAIN_FUNC "main"
+#define AND "and"
+#define OR "or"
+#define PLUS "+"
+#define MINUS "-"
+#define MUL "*"
+#define DIV "/"
+#define GR ">"
+#define GR_EQ ">="
+#define LS "<"
+#define LS_EQ "<="
+#define EQUAL "=="
+#define NOT_EQ "!="
+
 void Generator::generate()
 {
   // debugGenerator("Generating LLVM Code");
@@ -49,7 +63,7 @@ void Generator::func_init(atom_t &$$)
   {
     auto var = _gen_var_llvm();
     _B.emit(declare_var_llvm(var, total_args_str, (i + 1) * (-1)));
-    _B.emit(store_arg_llvm(to_string(i), var));
+    _B.emit(store_arg_through_id_llvm(to_string(i), var));
   }
 }
 
@@ -143,12 +157,27 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   auto op = *(atom_op.STRING);
   // debugGenerator("BINOP", op);
   auto var = _gen_var_llvm();
+  auto left_value = to_string(atom_left.INT);
+  auto right_value = to_string(atom_right.INT);
+  auto left_type = atom_left.TYPE;
+  auto right_type = atom_right.TYPE;
+  auto can_overflow = false;
+  /* Byte overflow */
+  if (op != DIV && left_type == TYPE_BYTE && right_type == TYPE_BYTE)
+  {
 
-  if (op == "/")
+    auto left_var = _gen_var_llvm();
+    _B.emit(assign_byte_llvm(left_var, left_value));
+
+    auto right_var = _gen_var_llvm();
+    _B.emit(assign_byte_llvm(right_var, right_value));
+
+    can_overflow = true;
+  }
+
+  if (op == DIV)
   {
     auto zero_var_llvm = _gen_var_llvm();
-    auto left_value = to_string(atom_left.INT);
-    auto right_value = to_string(atom_right.INT);
 
     _B.emit(zero_div_check_llvm(zero_var_llvm, right_value));
     auto zero_bp = _B.emit(branch_conditional_to_bp_llvm(zero_var_llvm));
@@ -159,12 +188,33 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     auto unused_bp = _B.emit(branch_to_bp_llvm);
 
     auto success_label = _B.genLabel();
-    _B.emit(op_div_llvm(var, "i32", left_value, right_value));
+    _B.emit(assign_op_llvm(var, "sdiv", "i32", left_value, right_value));
 
     _B.bpatch(_B.makelist({zero_bp, SECOND}), success_label);
     _B.bpatch(_B.makelist({zero_bp, FIRST}), error_label);
     _B.bpatch(_B.makelist({unused_bp, FIRST}), success_label);
   }
+  if (op == MUL)
+  {
+    _B.emit(assign_op_llvm(var, "mul", "i32", left_value, right_value));
+  }
+  if (op == PLUS)
+  {
+    _B.emit(assign_op_llvm(var, "add", "i32", left_value, right_value));
+  }
+  if (op == MINUS)
+  {
+    _B.emit(assign_op_llvm(var, "sub", "i32", left_value, right_value));
+  }
+
+  /* Handle overflow / sign */
+  if (can_overflow)
+  {
+    auto next_var = _gen_var_llvm();
+    _B.emit(assign_byte_overflow_llvm(next_var, var));
+    var = next_var;
+  }
+  $$.place = var;
 }
 
 void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, atom_t &atom_exp)
@@ -180,8 +230,7 @@ void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, ato
 
     _B.emit(declare_var_llvm(var, to_string(offset), args_size));
 
-    /* TODO: fix atom exp place */
-    _B.emit(store_arg_llvm(atom_exp.place, var));
+    _B.emit(store_arg_through_place_llvm(atom_exp.place, var));
     $$.next_list = atom_exp.next_list;
   }
 }

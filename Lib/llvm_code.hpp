@@ -61,7 +61,7 @@ string define_func_llvm(bool is_void_type, int size, string id)
 
 string declare_var_llvm(string var, string size, int pointer)
 {
-  return var + (pointer >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(pointer) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((pointer + 1) * (-1))));
+  return "\n" + var + (pointer >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(pointer) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((pointer + 1) * (-1))));
 }
 
 string define_args_llvm(string size)
@@ -69,9 +69,13 @@ string define_args_llvm(string size)
   return "%args = alloca [" + size + " x i32]";
 }
 
-string store_arg_llvm(string id, string var)
+string store_arg_through_id_llvm(string id, string var)
 {
   return "store i32 %" + id + " , i32* " + var;
+}
+string store_arg_through_place_llvm(string place, string var)
+{
+  return "store i32 " + place + " , i32* " + var;
 }
 
 string store_string_llvm(string id, string len, string value)
@@ -89,6 +93,10 @@ string assign_to_var_llvm(string var, string call_llvm)
 {
   return var + " = " + call_llvm;
 }
+string assign_byte_llvm(string var, string value)
+{
+  return var + " = trunc i32 " + value + " to i8";
+}
 
 string zero_div_check_llvm(string var, string value)
 {
@@ -100,7 +108,11 @@ string branch_conditional_to_bp_llvm(string var)
   return "br i1 " + var + " , label @ , label @";
 }
 
-string op_div_llvm(string var, string type, string left, string right)
+string assign_op_llvm(string var, string op, string type, string left, string right)
 {
-  return var + " = sdiv " + type + " " + left + ", " + right;
+  return var + " = " + op + " " + type + " " + left + ", " + right;
+}
+string assign_byte_overflow_llvm(string var, string value)
+{
+  return var + " = zext i8 " + value + " to i32";
 }

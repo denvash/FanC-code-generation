@@ -160,12 +160,12 @@ Statement:
       $$ = $2;
     }
     | Type ID SC                                                {
-      // debugPrint("Statement Type ID SC");
+      debugPrint("Statement Type ID SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
     }
     | Type ID ASSIGN Exp SC                                     {
-      // debugPrint("Statement Type ID ASSIGN Exp SC");
+      debugPrint("Statement Type ID ASSIGN Exp SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
       assign_value($2,$4);
