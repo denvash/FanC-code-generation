@@ -156,25 +156,31 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
 {
   auto op = *(atom_op.STRING);
   // debugGenerator("BINOP", op);
-  auto var = _gen_var_llvm();
-  auto left_value = to_string(atom_left.INT);
+  auto target = _gen_var_llvm();
+
   auto right_value = to_string(atom_right.INT);
-  auto left_type = atom_left.TYPE;
+  auto left_value = to_string(atom_left.INT);
+
   auto right_type = atom_right.TYPE;
-  auto can_overflow = false;
+  auto left_type = atom_left.TYPE;
 
   auto right_place = atom_right.place;
   auto left_place = atom_left.place;
 
+  /* The values to use */
+  auto right = right_place == "" ? right_value : right_place;
+  auto left = left_place == "" ? left_value : left_place;
+
+  auto can_overflow = false;
   /* Byte overflow */
   if (op != DIV && left_type == TYPE_BYTE && right_type == TYPE_BYTE)
   {
 
     auto left_var = _gen_var_llvm();
-    _B.emit(assign_byte_llvm(left_var, left_value));
+    _B.emit(assign_byte_llvm(left_var, left));
 
     auto right_var = _gen_var_llvm();
-    _B.emit(assign_byte_llvm(right_var, right_value));
+    _B.emit(assign_byte_llvm(right_var, right));
 
     can_overflow = true;
   }
@@ -182,7 +188,7 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   if (op == DIV)
   {
     auto zero_var_llvm = _gen_var_llvm();
-    _B.emit(zero_div_check_llvm(zero_var_llvm, right_place));
+    _B.emit(zero_div_check_llvm(zero_var_llvm, right));
     auto zero_bp = _B.emit(branch_conditional_to_bp_llvm(zero_var_llvm));
 
     auto error_label = _B.genLabel();
@@ -191,7 +197,7 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     auto unused_bp = _B.emit(branch_to_bp_llvm);
 
     auto success_label = _B.genLabel();
-    _B.emit(assign_op_llvm(var, "sdiv", "i32", left_place, right_place));
+    _B.emit(assign_op_llvm(target, "sdiv", "i32", left, right));
 
     _B.bpatch(_B.makelist({zero_bp, SECOND}), success_label);
     _B.bpatch(_B.makelist({zero_bp, FIRST}), error_label);
@@ -199,25 +205,25 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   }
   else if (op == MUL)
   {
-    _B.emit(assign_op_llvm(var, "mul", "i32", left_place, right_place));
+    _B.emit(assign_op_llvm(target, "mul", "i32", left, right));
   }
   else if (op == PLUS)
   {
-    _B.emit(assign_op_llvm(var, "add", "i32", left_place, right_place));
+    _B.emit(assign_op_llvm(target, "add", "i32", left, right));
   }
   else if (op == MINUS)
   {
-    _B.emit(assign_op_llvm(var, "sub", "i32", left_place, right_place));
+    _B.emit(assign_op_llvm(target, "sub", "i32", left, right));
   }
 
   /* Handle overflow / sign */
   if (can_overflow)
   {
     auto next_var = _gen_var_llvm();
-    _B.emit(assign_byte_overflow_llvm(next_var, var));
-    var = next_var;
+    _B.emit(assign_byte_overflow_llvm(next_var, target));
+    target = next_var;
   }
-  $$.place = var;
+  $$.place = target;
 }
 
 void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, atom_t &atom_exp)
