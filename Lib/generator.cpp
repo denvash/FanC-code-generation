@@ -244,15 +244,20 @@ void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, ato
     return;
   }
 
-  debugGenerator("Non Boolean Assign");
+  // debugGenerator("Non Boolean Assign");
   auto target = _gen_var_llvm();
-  auto atom_func = table.get_last_function_in_scope();
-  auto offset = atom_func->offset;
-  auto func_id = atom_func->name;
-  auto args_size = table.get_total_args(func_id);
-  auto total_args_str = to_string(args_size);
 
-  _B.emit(declare_var_llvm(target, total_args_str, offset));
+  auto atom_func = table.get_last_function_in_scope();
+  auto func_name = atom_func->name;
+
+  auto args_size = table.get_total_args(func_name);
+  auto args_size_str = to_string(args_size);
+
+  auto id_entry = table.get_entry(*atom_id.STRING);
+  auto id_offset = id_entry.offset;
+  // debugGenerator("offset:", to_string(id_offset));
+
+  _B.emit(declare_var_llvm(target, args_size_str, id_offset));
 
   _B.emit(store_arg_through_place_llvm(atom_exp.place, target));
   $$.next_list = atom_exp.next_list;
