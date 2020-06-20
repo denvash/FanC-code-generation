@@ -158,6 +158,10 @@ Statement:
     OpenScope LBRACE Statements RBRACE CloseScope                                    {
       // debugPrint("Statement LBRACE Statements RBRACE");
       $$ = $2;
+      $$.next_list = $3.next_list;
+      $$.break_list = $3.break_list;
+      $$.continue_list = $3.continue_list;
+      // _B.bpatch($3.next_list,$4.name);
     }
     | Type ID SC                                                {
       debugPrint("Statement Type ID SC");
@@ -181,10 +185,12 @@ Statement:
     | RETURN SC                                                 {
       // debugPrint("Statement RETURN SC");
       return_value_check(TYPE_VOID);
+      _G->gen_return($$);
     }
     | RETURN Exp SC                                             {
       // debugPrint("Statement RETURN Exp SC");
       return_value_check($2.TYPE);
+      _G->gen_return_exp($$,$2);
     }
     | IfExp Statement %prec NOELSE CloseScope               {
       // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
@@ -211,7 +217,7 @@ Call:
       _G->func_call($$,$1,$3);
     }
     |   ID LPAREN RPAREN            {
-      // debugPrint("Call ID LPAREN RPAREN");
+      debugPrint("Call ID LPAREN RPAREN");
       $$.NODE = new Call($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();

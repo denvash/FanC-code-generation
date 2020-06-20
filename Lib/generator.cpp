@@ -182,8 +182,14 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     auto right_var = _gen_var_llvm();
     _B.emit(assign_byte_llvm(right_var, right));
 
+    /* Bubble the updates */
+    left = left_var;
+    right = right_var;
+
     can_overflow = true;
   }
+
+  auto op_type_llvm = can_overflow ? "i8" : "i32";
 
   if (op == DIV)
   {
@@ -197,7 +203,7 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     auto unused_bp = _B.emit(branch_to_bp_llvm);
 
     auto success_label = _B.genLabel();
-    _B.emit(assign_op_llvm(target, "sdiv", "i32", left, right));
+    _B.emit(assign_op_llvm(target, "sdiv", op_type_llvm, left, right));
 
     _B.bpatch(_B.makelist({zero_bp, SECOND}), success_label);
     _B.bpatch(_B.makelist({zero_bp, FIRST}), error_label);
@@ -205,15 +211,15 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   }
   else if (op == MUL)
   {
-    _B.emit(assign_op_llvm(target, "mul", "i32", left, right));
+    _B.emit(assign_op_llvm(target, "mul", op_type_llvm, left, right));
   }
   else if (op == PLUS)
   {
-    _B.emit(assign_op_llvm(target, "add", "i32", left, right));
+    _B.emit(assign_op_llvm(target, "add", op_type_llvm, left, right));
   }
   else if (op == MINUS)
   {
-    _B.emit(assign_op_llvm(target, "sub", "i32", left, right));
+    _B.emit(assign_op_llvm(target, "sub", op_type_llvm, left, right));
   }
 
   /* Handle overflow / sign */
@@ -276,4 +282,9 @@ void Generator::gen_id(atom_t &$$, atom_t &atom_id)
     $$.true_list = unconditional_list;
     $$.false_list = conditional_list;
   }
+}
+
+void Generator::gen_return(atom_t &$$)
+{
+  _B.emit(ret_void_llvm);
 }
