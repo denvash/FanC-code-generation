@@ -75,6 +75,7 @@ void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
   auto branch_to_bp = _B.emit(branch_to_bp_llvm);
   auto label = _B.genLabel();
 
+  // debugGenerator("Func end label: ", label);
   _B.bpatch(_B.makelist({branch_to_bp, FIRST}), label);
   _B.bpatch(atom_statement.next_list, label);
   _B.emit(atom_id.TYPE == TYPE_VOID ? ret_void_llvm : ret_success_llvm);
@@ -188,8 +189,18 @@ void Generator::gen_bp_label(atom_t &$$)
   // debugGenerator("Generating BP Label");
   auto buffer_index = _B.emit(branch_to_bp_llvm);
   auto label = _B.genLabel();
+  // debugGenerator("label", label);
   _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
   $$.quad = label;
+}
+void Generator::gen_bp_label_and_makelist(atom_t &$$)
+{
+  auto buffer_index = _B.emit(branch_to_bp_llvm);
+  auto label = _B.genLabel();
+  // debugGenerator("label", label);
+  _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
+  $$.quad = label;
+  $$.next_list = _B.makelist({_B.emit(branch_to_bp_llvm), FIRST});
 }
 
 void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
@@ -352,4 +363,96 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   auto source = place == "" ? value : place;
   _B.emit(ret_exp_llvm(source));
   $$.next_list = atom_exp.next_list;
+}
+
+void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
+{
+  auto op = *(atom_op.STRING);
+  // debugGenerator("BINOP", op);
+
+  auto right_value = to_string(atom_right.INT);
+  auto left_value = to_string(atom_left.INT);
+
+  auto right_type = atom_right.TYPE;
+  auto left_type = atom_left.TYPE;
+
+  auto right_place = atom_right.place;
+  auto left_place = atom_left.place;
+
+  /* The values to use */
+  auto right = right_place == "" ? right_value : right_place;
+  auto left = left_place == "" ? left_value : left_place;
+  auto op_llvm = "eq"; /* == */
+
+  if (op == ">")
+  {
+    op_llvm = "sgt";
+  }
+  else if (op == ">=")
+  {
+    op_llvm = "sge";
+  }
+  else if (op == "<")
+  {
+    op_llvm = "slt";
+  }
+  else if (op == "<=")
+  {
+    op_llvm = "sle";
+  }
+  else if (op == "!=")
+  {
+    op_llvm = "ne";
+  }
+  auto target = _gen_var_llvm();
+  _B.emit(assign_relop_llvm(target, op_llvm, left, right));
+  // debugGenerator("label branch", target);
+  auto label_index = _B.emit(branch_conditional_to_bp_llvm(target));
+  $$.true_list = _B.makelist({label_index, FIRST});
+  $$.false_list = _B.makelist({label_index, SECOND});
+  $$.place = target;
+}
+void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
+{
+  auto op = *(atom_op.STRING);
+  // debugGenerator("quad in logicalop", $$.quad);
+  if (op == AND)
+  {
+    _B.bpatch(atom_left.true_list, $$.quad);
+    $$.true_list = atom_right.true_list;
+    $$.false_list = _B.merge(atom_left.false_list, atom_right.false_list);
+    $$.next_list = $$.false_list;
+  }
+  else
+  {
+    _B.bpatch(atom_left.false_list, $$.quad);
+    $$.false_list = atom_right.false_list;
+    $$.true_list = _B.merge(atom_left.true_list, atom_right.true_list);
+  }
+}
+void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
+{
+  auto type = atom_exp.TYPE;
+
+  debugGenerator("Eval type", type_to_string_map[type]);
+}
+
+void Generator::gen_bp_boolean_exp(atom_t &$$, atom_t &atom_exp, atom_t &atom_label)
+{
+  // debugGenerator("boolen bp quad", atom_label.quad);
+  _B.bpatch(atom_exp.true_list, atom_label.quad);
+
+  // _B.bpatch(atom_exp.false_list, "label_8");
+
+  $$.next_list = atom_exp.next_list;
+  $$.continue_list = atom_exp.continue_list;
+  $$.break_list = atom_exp.break_list;
+}
+
+void Generator::gen_bp_boolean_in_statement(atom_t &$$, atom_t &atom_if_exp, atom_t &atom_statement)
+{
+  // debugGenerator("statement quad", atom_statement.quad);
+  $$.next_list = _B.merge(atom_if_exp.false_list, atom_statement.next_list);
+  $$.break_list = atom_statement.break_list;
+  $$.continue_list = atom_statement.continue_list;
 }

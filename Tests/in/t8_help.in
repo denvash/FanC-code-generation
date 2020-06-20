@@ -1,0 +1,4 @@
+void main() {
+    if (100 == 100b)
+        print("equal!");
+}

@@ -51,6 +51,12 @@ public:
   void gen_id(atom_t &, atom_t &);
   void gen_return(atom_t &);
   void gen_return_exp(atom_t &, atom_t &);
+  void gen_relop(atom_t &, atom_t &, atom_t &, atom_t &);
+  void gen_logicalop(atom_t &, atom_t &, atom_t &, atom_t &);
+  void gen_bp_label_and_makelist(atom_t &);
+  void gen_eval_boolean(atom_t &, atom_t &);
+  void gen_bp_boolean_exp(atom_t &, atom_t &, atom_t &);
+  void gen_bp_boolean_in_statement(atom_t &, atom_t &, atom_t &);
 };
 
 inline void debugGenerator(string text)

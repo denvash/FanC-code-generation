@@ -131,3 +131,7 @@ string ret_exp_llvm(string source)
 {
   return "ret i32 " + source;
 }
+string assign_relop_llvm(string target, string op, string left, string right)
+{
+  return target + " = icmp " + op + " i32 " + left + ", " + right;
+}

@@ -130,10 +130,11 @@ CloseScope:
     };
 
 IfExp:
-    IF LPAREN Exp RPAREN            {
+    IF LPAREN Exp RPAREN M           {
       // debugPrint("IfExp IF LPAREN Exp RPAREN");
       $$.NODE = new IfExp($3);
       table.open_scope();
+      _G->gen_bp_boolean_exp($$, $3, $5);
     };
 
 WhileIn:
@@ -155,13 +156,13 @@ WhileTypeCheck:
 
 Statement:
     /* For if () {}, two scopes should be opened */
-    OpenScope LBRACE Statements RBRACE CloseScope                                    {
+    OpenScope LBRACE Statements M RBRACE CloseScope                                    {
       // debugPrint("Statement LBRACE Statements RBRACE");
       $$ = $2;
       $$.next_list = $3.next_list;
       $$.break_list = $3.break_list;
       $$.continue_list = $3.continue_list;
-      // _B.bpatch($3.next_list,$4.name);
+      _B.bpatch($3.next_list,$4.quad);
     }
     | Type ID SC                                                {
       // debugPrint("Statement Type ID SC");
@@ -194,8 +195,17 @@ Statement:
     }
     | IfExp Statement %prec NOELSE CloseScope               {
       // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
+      $3.quad = $2.quad;
+      _G->gen_bp_boolean_in_statement($$,$1,$2);
     }
-    | IfExp Statement CloseScope ELSE Statement %prec ELSE           {}
+    | IfExp Statement CloseScope ELSE Statement %prec ELSE           {
+      // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
+        // _B.bpatch($3.true_list,$$.quad);
+        // _B.bpatch($3.false_list,$$.quad);
+        // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
+        // $$.break_list = _B.merge($3.break_list, $7.break_list);
+        // $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
+    }
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
     | BREAK SC                                                  {
@@ -230,10 +240,8 @@ ExpList:
       $$.NODE = new ExpList($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
-      // TODO: short-circuit
-      // _G->eval_boolean($1);
     }
-    /* Reverse Explint and Exp */
+    /* Reverse Explist and Exp */
     | ExpList COMMA Exp             {
       // debugPrint("ExpList Exp COMMA ExpList");
       $$.NODE = new ExpList($1, $3);
@@ -314,27 +322,31 @@ Exp:
       $$.TYPE = TYPE_BOOL;
       $$.INT = !$1.INT;
     }
-    | Exp AND Exp                   {
-      $$.NODE = new Exp($1, "and", $3);
+    | Exp AND M Exp                   {
+      $$.NODE = new Exp($1, "and", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_logicalop($$,$1,$2,$3);
     }
-    | Exp OR Exp                    {
-      $$.NODE = new Exp($1, "or", $3);
+    | Exp OR M Exp                    {
+      $$.NODE = new Exp($1, "or", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_logicalop($$,$1,$2,$3);
     }
     | Exp EQ_RELOP Exp              {
       // debugPrint("Exp EQ_RELOP Exp");
       $$.NODE = new Exp($1, *$2.STRING, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_relop($$,$1,$2,$3);
     }
     | Exp RELOP Exp                 {
       // debugPrint("Exp Exp RELOP Exp");
       $$.NODE = new Exp($1, *$2.STRING, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_relop($$,$1,$2,$3);
     };
 %%
 
