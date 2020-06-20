@@ -1,6 +1,6 @@
 void explainWhileElse(int x) {
 	int cnt = 0;
-	while(cnt < x){
+	while(cnt < x){ 
 		printi(cnt);
 		cnt = cnt + 1;
 		if(cnt == 5) {
@@ -10,8 +10,8 @@ void explainWhileElse(int x) {
 	else {
 		print("shouldn't be printed");
 	}
-
-	while(cnt < x){
+	
+	while(cnt < x){ 
 		printi(cnt);
 		cnt = cnt + 1;
 		if(cnt == 5) {

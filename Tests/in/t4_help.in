@@ -1,0 +1,8 @@
+int mod(int lhs, int rhs) {
+    rhs = lhs / rhs * rhs;
+    return lhs - rhs;
+}
+
+void main() {
+    printi(mod(20,3));
+}

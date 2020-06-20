@@ -49,6 +49,7 @@ public:
   void gen_assign(atom_t &, atom_t &, atom_t &, atom_t &);
   void gen_id(atom_t &, atom_t &);
   void gen_return(atom_t &);
+  void gen_return_exp(atom_t &, atom_t &);
 };
 
 inline void debugGenerator(string text)

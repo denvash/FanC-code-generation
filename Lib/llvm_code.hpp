@@ -41,10 +41,10 @@ call void @exit(i32 0))";
 static const string func_entry_llvm = R"(entry:
 %fp = alloca [50 x i32])";
 
-string call_print_llvm(string len, string id)
+string call_print_llvm(string len, string source)
 {
   /* call void @print (i8* getelementptr ([13 x i8], [13 x i8]* @msg, i32 0, i32 0)) */
-  return "call void @print (i8* getelementptr ([" + len + " x i8], [" + len + " x i8]* " + id + ", i32 0, i32 0))";
+  return "call void @print (i8* getelementptr ([" + len + " x i8], [" + len + " x i8]* " + source + ", i32 0, i32 0))";
 }
 
 string define_func_llvm(bool is_void_type, int size, string id)
@@ -59,9 +59,9 @@ string define_func_llvm(bool is_void_type, int size, string id)
   return "define " + type + " @" + id + "(" + args + ") {";
 }
 
-string declare_var_llvm(string var, string size, int pointer)
+string declare_var_llvm(string target, string size, int pointer)
 {
-  return "\n" + var + (pointer >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(pointer) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((pointer + 1) * (-1))));
+  return "\n" + target + (pointer >= 0 ? " = getelementptr [50 x i32], [50 x i32]* %fp, i32 0 , i32 " + to_string(pointer) : " = getelementptr [" + size + " x i32], [" + size + " x i32]* %args, i32 0 , i32 " + to_string(((pointer + 1) * (-1))));
 }
 
 string define_args_llvm(string size)
@@ -89,9 +89,9 @@ string call_function_llvm(bool is_void_type, string name, string args)
   return "call " + return_type_llvm + " @" + name + "(" + args + ")";
 }
 
-string assign_to_var_llvm(string var, string call_llvm)
+string assign_to_var_llvm(string target, string call_llvm)
 {
-  return var + " = " + call_llvm;
+  return target + " = " + call_llvm;
 }
 string assign_byte_llvm(string var, string value)
 {
@@ -121,7 +121,13 @@ string load_to_register_llvm(string target, string source)
 {
   return target + " = load i32, i32* " + source;
 }
+
 string compare_boolean_llvm(string target, string source)
 {
   return target + " = icmp ne i32 0, " + source;
+}
+
+string ret_exp_llvm(string source)
+{
+  return "ret i32 " + source;
 }

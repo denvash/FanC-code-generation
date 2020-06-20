@@ -61,9 +61,9 @@ void Generator::func_init(atom_t &$$)
   }
   for (auto i = 0; i < total_args; i++)
   {
-    auto var = _gen_var_llvm();
-    _B.emit(declare_var_llvm(var, total_args_str, (i + 1) * (-1)));
-    _B.emit(store_arg_through_id_llvm(to_string(i), var));
+    auto target = _gen_var_llvm();
+    _B.emit(declare_var_llvm(target, total_args_str, (i + 1) * (-1)));
+    _B.emit(store_arg_through_id_llvm(to_string(i), target));
   }
 }
 
@@ -95,9 +95,9 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
     /* len without quotes */
     auto str_len = to_string(str_value.length() - 1);
-    auto var_id = str_atom.VAR_ID;
+    auto source = str_atom.place == "" ? str_atom.VAR_ID : str_atom.place;
 
-    _B.emit(call_print_llvm(str_len, var_id));
+    _B.emit(call_print_llvm(str_len, source));
 
     $$.place = PLACE_VOID;
     return;
@@ -108,8 +108,10 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
   for (auto &&exp_atom : exp_list->list)
   {
-    auto expression_value = to_string(exp_atom.INT);
-    args_llvm = args_llvm + "i32 " + expression_value + ",";
+    auto exp_value = to_string(exp_atom.INT);
+    auto exp_place = exp_atom.place;
+    auto exp_source = exp_place == "" ? exp_value : exp_place;
+    args_llvm = args_llvm + "i32 " + exp_source + ",";
   }
   /* Cut the last "," */
   args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
@@ -124,9 +126,9 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   /* There is a return type */
   else
   {
-    auto var = _gen_string_var_id_llvm();
-    _B.emit(assign_to_var_llvm(var, call_exp_llvm));
-    $$.place = PLACE_VOID;
+    auto target = _gen_var_llvm();
+    _B.emit(assign_to_var_llvm(target, call_exp_llvm));
+    $$.place = target;
   }
 }
 
@@ -194,7 +196,9 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   if (op == DIV)
   {
     auto zero_var_llvm = _gen_var_llvm();
-    _B.emit(zero_div_check_llvm(zero_var_llvm, right));
+    auto zero_source = right_place == "" ? right_value : right_place;
+
+    _B.emit(zero_div_check_llvm(zero_var_llvm, zero_source));
     auto zero_bp = _B.emit(branch_conditional_to_bp_llvm(zero_var_llvm));
 
     auto error_label = _B.genLabel();
@@ -240,16 +244,17 @@ void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, ato
     return;
   }
 
-  // debugGenerator("Non Boolean Assign");
-  auto var = _gen_var_llvm();
+  debugGenerator("Non Boolean Assign");
+  auto target = _gen_var_llvm();
   auto atom_func = table.get_last_function_in_scope();
   auto offset = atom_func->offset;
   auto func_id = atom_func->name;
   auto args_size = table.get_total_args(func_id);
+  auto total_args_str = to_string(args_size);
 
-  _B.emit(declare_var_llvm(var, to_string(offset), args_size));
+  _B.emit(declare_var_llvm(target, total_args_str, offset));
 
-  _B.emit(store_arg_through_place_llvm(atom_exp.place, var));
+  _B.emit(store_arg_through_place_llvm(atom_exp.place, target));
   $$.next_list = atom_exp.next_list;
 }
 void Generator::gen_id(atom_t &$$, atom_t &atom_id)
@@ -260,14 +265,22 @@ void Generator::gen_id(atom_t &$$, atom_t &atom_id)
   auto target = _gen_var_llvm();
 
   auto entry = table.get_last_function_in_scope();
+
   auto func_info = entry->type_info;
   auto func_name = entry->name;
-  auto offset = entry->offset;
 
-  auto offset_str = to_string(offset);
+  auto id_entry = table.get_entry(*atom_id.STRING);
   auto args_size = table.get_total_args(func_name);
+  auto args_size_str = to_string(args_size);
 
-  _B.emit(declare_var_llvm(source, offset_str, args_size));
+  auto id_offset = id_entry.offset;
+
+  // debugGenerator("atom id:", *atom_id.STRING);
+  // debugGenerator("func name:", func_name);
+  // debugGenerator("args size", args_size_str);
+  // debugGenerator("offset", to_string(id_offset));
+
+  _B.emit(declare_var_llvm(source, args_size_str, id_offset));
   _B.emit(load_to_register_llvm(target, source));
   $$.place = target;
 
@@ -287,4 +300,13 @@ void Generator::gen_id(atom_t &$$, atom_t &atom_id)
 void Generator::gen_return(atom_t &$$)
 {
   _B.emit(ret_void_llvm);
+}
+
+void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
+{
+  auto place = atom_exp.place;
+  auto value = to_string(atom_exp.INT);
+  auto source = place == "" ? value : place;
+  _B.emit(ret_exp_llvm(source));
+  $$.next_list = atom_exp.next_list;
 }
