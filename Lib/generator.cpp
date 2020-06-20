@@ -115,6 +115,7 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   }
   /* Cut the last "," */
   args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
+  // debugGenerator("func name", func_name);
 
   auto call_exp_llvm = call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm);
 
@@ -129,6 +130,43 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
     auto target = _gen_var_llvm();
     _B.emit(assign_to_var_llvm(target, call_exp_llvm));
     $$.place = target;
+  }
+}
+
+/* Func call without args */
+void Generator::func_call(atom_t &$$, atom_t &atom_id)
+{
+  auto func_atom = table.get_entry(*atom_id.STRING);
+  auto func_name = func_atom.name;
+  auto func_type = func_atom.type_info.type;
+  auto no_args = "";
+
+  auto is_void_func = func_type == TYPE_VOID;
+  auto call_llvm = call_function_llvm(is_void_func, func_name, no_args);
+
+  // debugGenerator("func call without args", func_name);
+  // debugGenerator("func is Type", type_to_string_map[func_type]);
+
+  if (is_void_func)
+  {
+    _B.emit(call_llvm);
+    $$.place = PLACE_VOID;
+  }
+  else
+  {
+    auto target = _gen_var_llvm();
+    _B.emit(assign_to_var_llvm(target, call_llvm));
+    $$.place = target;
+
+    if (func_type == TYPE_BOOL)
+    {
+      auto target_bool = _gen_var_llvm();
+      _B.emit(compare_boolean_llvm(target_bool, target));
+      auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_bool));
+      $$.true_list = _B.makelist({label_index, FIRST});
+      $$.false_list = _B.makelist({label_index, SECOND});
+      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})), _B.makelist({label_index, SECOND}));
+    }
   }
 }
 

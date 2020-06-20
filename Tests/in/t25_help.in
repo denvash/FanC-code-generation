@@ -1,0 +1,9 @@
+int printAndRet() {
+    print("called printAndRet");
+    return 1;
+}
+
+void main() {
+    printAndRet();
+    printi(printAndRet());
+}

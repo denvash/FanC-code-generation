@@ -43,6 +43,7 @@ public:
   void func_init(atom_t &);
   void func_end(atom_t &, atom_t &);
   void func_call(atom_t &, atom_t &, atom_t &);
+  void func_call(atom_t &, atom_t &); /* Func call without args */
   void gen_string(atom_t &);
   void gen_bp_label(atom_t &);
   void gen_binop(atom_t &, atom_t &, atom_t &, atom_t &);

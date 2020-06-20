@@ -221,6 +221,7 @@ Call:
       $$.NODE = new Call($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->func_call($$,$1);
     };
 
 ExpList:
