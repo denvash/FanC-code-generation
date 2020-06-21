@@ -37,6 +37,7 @@ struct atom_t
   vector<pair<int, BranchLabelIndex>> continue_list;
   string quad;
   string place;
+  bool is_return;
 };
 
 class Exp : public Node

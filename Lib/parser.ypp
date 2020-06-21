@@ -14,6 +14,7 @@
   void yyerror(char const*);
   #define _B (CodeBuffer::instance())
   #define _G (Generator::getInstance())
+  #define IS_RETURN "@@return statement"
 %}
 %token VOID INT BYTE B BOOL TRUE FALSE RETURN IF WHILE BREAK CONTINUE SC COMMA LBRACE RBRACE ID NUM STRING
 /* https://introcs.cs.princeton.edu/java/11precedence/ */
@@ -107,6 +108,7 @@ Statements:
     }
     | Statements M Statement          {
       // debugPrint("Statements Statements Statement");
+      _G->pb_short_circuit($1,$2,$3);
       $$.next_list = $3.next_list;
       $$.break_list = _B.merge($1.break_list,$3.break_list);
       $$.continue_list = _B.merge($1.continue_list,$3.continue_list);
@@ -192,11 +194,13 @@ Statement:
       // debugPrint("Statement RETURN SC");
       return_value_check(TYPE_VOID);
       _G->gen_return($$);
+      $$.is_return = true;
     }
     | RETURN Exp SC                                             {
       // debugPrint("Statement RETURN Exp SC");
       return_value_check($2.TYPE);
       _G->gen_return_exp($$,$2);
+      $$.is_return = true;
     }
     | IfExp M Statement %prec NOELSE CloseScope               {
       // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
@@ -334,20 +338,23 @@ Exp:
       $$ = $2;
       $$.TYPE = TYPE_BOOL;
       $$.INT = !$1.INT;
+      $$.true_list = $2.false_list;
+      $$.false_list = $2.true_list;
     }
     | Exp AND M Exp                   {
+      // debugPrint("Exp Exp AND M Exp");
       $$.NODE = new Exp($1, "and", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
       $$.quad = $3.quad;
-      _G->gen_logicalop($$,$1,$2,$4);
+      _G->gen_logicalop($$,$1,"and",$4);
     }
     | Exp OR M Exp                    {
       $$.NODE = new Exp($1, "or", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
       $$.quad = $3.quad;
-      _G->gen_logicalop($$,$1,$2,$4);
+      _G->gen_logicalop($$,$1,"or",$4);
     }
     | Exp EQ_RELOP Exp              {
       // debugPrint("Exp EQ_RELOP Exp");

@@ -40,7 +40,8 @@ call i32 (i8*, ...) @printf(i8* getelementptr([24 x i8], [24 x i8]* @.zero_div, 
 call void @exit(i32 0))";
 
 static const string func_entry_llvm = R"(entry:
-%fp = alloca [50 x i32])";
+%fp = alloca [50 x i32]
+)";
 
 string call_print_llvm(string len, string source)
 {

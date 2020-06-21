@@ -134,7 +134,7 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
     if (function_type == TYPE_BOOL)
     {
-      debugGenerator("Bool type func");
+      // debugGenerator("Bool type func");
       auto target_boolean = _gen_var_llvm();
       _B.emit(compare_boolean_llvm(target_boolean, target));
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
@@ -419,10 +419,10 @@ void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   $$.false_list = _B.makelist({label_index, SECOND});
   $$.place = target;
 }
-void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
+void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &atom_right)
 {
-  auto op = *(atom_op.STRING);
   // debugGenerator("quad in logicalop", $$.quad);
+  // debugGenerator("gen AND op", op);
   if (op == AND)
   {
     _B.bpatch(atom_left.true_list, $$.quad);
@@ -430,7 +430,7 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, at
     $$.false_list = _B.merge(atom_left.false_list, atom_right.false_list);
     $$.next_list = $$.false_list;
   }
-  else
+  else if (op == OR)
   {
     _B.bpatch(atom_left.false_list, $$.quad);
     $$.false_list = atom_right.false_list;
@@ -449,8 +449,6 @@ void Generator::gen_bp_boolean_exp(atom_t &$$, atom_t &atom_if_exp, atom_t &atom
   // debugGenerator("boolen bp quad", atom_label.quad);
   _B.bpatch(atom_if_exp.true_list, $$.quad);
 
-  // _B.bpatch(atom_exp.false_list, "label_8");
-
   $$.next_list = _B.merge(atom_if_exp.false_list, atom_statement.next_list);
   $$.continue_list = atom_statement.continue_list;
   $$.break_list = atom_statement.break_list;
@@ -468,11 +466,19 @@ void Generator::makelist_boolean(atom_t &$$, bool is_true)
   auto label_index = _B.emit(branch_to_bp_llvm);
   auto list = _B.makelist({label_index, FIRST});
   if (is_true)
-    $$.true_list = list;
   {
+    $$.true_list = list;
   }
   else
   {
     $$.false_list = list;
+  }
+}
+
+void Generator::pb_short_circuit(atom_t &atom_statements, atom_t &atom_marker, atom_t &atom_statement)
+{
+  if (atom_marker.is_return == false)
+  {
+    _B.bpatch(atom_statements.next_list, atom_marker.quad);
   }
 }
