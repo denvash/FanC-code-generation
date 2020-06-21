@@ -1,0 +1,6 @@
+void main() {
+    if (5 < 6b)
+        print("smaller!");
+    else
+        print("shouldn't happen");
+}

@@ -131,6 +131,18 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
     auto target = _gen_var_llvm();
     _B.emit(assign_to_var_llvm(target, call_exp_llvm));
     $$.place = target;
+
+    if (function_type == TYPE_BOOL)
+    {
+      debugGenerator("Bool type func");
+      auto target_boolean = _gen_var_llvm();
+      _B.emit(compare_boolean_llvm(target_boolean, target));
+      auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
+      $$.true_list = _B.makelist({label_index, FIRST});
+      $$.false_list = _B.makelist({label_index, SECOND});
+      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
+                              (_B.makelist({label_index, SECOND})));
+    }
   }
 }
 
@@ -437,16 +449,16 @@ void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
   debugGenerator("Eval type", type_to_string_map[type]);
 }
 
-void Generator::gen_bp_boolean_exp(atom_t &$$, atom_t &atom_exp, atom_t &atom_label)
+void Generator::gen_bp_boolean_exp(atom_t &$$, atom_t &atom_if_exp, atom_t &atom_statement)
 {
   // debugGenerator("boolen bp quad", atom_label.quad);
-  _B.bpatch(atom_exp.true_list, atom_label.quad);
+  _B.bpatch(atom_if_exp.true_list, $$.quad);
 
   // _B.bpatch(atom_exp.false_list, "label_8");
 
-  $$.next_list = atom_exp.next_list;
-  $$.continue_list = atom_exp.continue_list;
-  $$.break_list = atom_exp.break_list;
+  $$.next_list = _B.merge(atom_if_exp.false_list, atom_statement.next_list);
+  $$.continue_list = atom_statement.continue_list;
+  $$.break_list = atom_statement.break_list;
 }
 
 void Generator::gen_bp_boolean_in_statement(atom_t &$$, atom_t &atom_if_exp, atom_t &atom_statement)

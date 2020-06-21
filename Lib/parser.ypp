@@ -130,11 +130,11 @@ CloseScope:
     };
 
 IfExp:
-    IF LPAREN Exp RPAREN M           {
+    IF LPAREN Exp RPAREN           {
       // debugPrint("IfExp IF LPAREN Exp RPAREN");
+      $$ = $3;
       $$.NODE = new IfExp($3);
       table.open_scope();
-      _G->gen_bp_boolean_exp($$, $3, $5);
     };
 
 WhileIn:
@@ -193,18 +193,18 @@ Statement:
       return_value_check($2.TYPE);
       _G->gen_return_exp($$,$2);
     }
-    | IfExp Statement %prec NOELSE CloseScope               {
+    | IfExp M Statement %prec NOELSE CloseScope               {
       // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
-      $3.quad = $2.quad;
-      _G->gen_bp_boolean_in_statement($$,$1,$2);
+      $$.quad = $2.quad;
+      _G->gen_bp_boolean_exp($$, $1, $3);
     }
-    | IfExp Statement CloseScope ELSE Statement %prec ELSE           {
+    | IfExp M Statement CloseScope ELSE Statement %prec ELSE           {
       // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
-        // _B.bpatch($3.true_list,$$.quad);
-        // _B.bpatch($3.false_list,$$.quad);
-        // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
-        // $$.break_list = _B.merge($3.break_list, $7.break_list);
-        // $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
+      // _B.bpatch($3.true_list,$$.quad);
+      // _B.bpatch($3.false_list,$$.quad);
+      // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
+      // $$.break_list = _B.merge($3.break_list, $7.break_list);
+      // $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
     }
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
@@ -326,13 +326,15 @@ Exp:
       $$.NODE = new Exp($1, "and", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
-      _G->gen_logicalop($$,$1,$2,$3);
+      $$.quad = $3.quad;
+      _G->gen_logicalop($$,$1,$2,$4);
     }
     | Exp OR M Exp                    {
       $$.NODE = new Exp($1, "or", $4);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
-      _G->gen_logicalop($$,$1,$2,$3);
+      $$.quad = $3.quad;
+      _G->gen_logicalop($$,$1,$2,$4);
     }
     | Exp EQ_RELOP Exp              {
       // debugPrint("Exp EQ_RELOP Exp");
