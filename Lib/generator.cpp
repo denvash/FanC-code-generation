@@ -198,20 +198,15 @@ void Generator::gen_string(atom_t &atom)
 
 void Generator::gen_bp_label(atom_t &$$)
 {
-  // debugGenerator("Generating BP Label");
   auto buffer_index = _B.emit(branch_to_bp_llvm);
   auto label = _B.genLabel();
   // debugGenerator("label", label);
   _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
   $$.quad = label;
 }
-void Generator::gen_bp_label_and_makelist(atom_t &$$)
+void Generator::gen_bp_label_makelist(atom_t &$$)
 {
-  auto buffer_index = _B.emit(branch_to_bp_llvm);
-  auto label = _B.genLabel();
-  // debugGenerator("label", label);
-  _B.bpatch(_B.makelist({buffer_index, FIRST}), label);
-  $$.quad = label;
+  gen_bp_label($$);
   $$.next_list = _B.makelist({_B.emit(branch_to_bp_llvm), FIRST});
 }
 
@@ -467,4 +462,17 @@ void Generator::gen_bp_boolean_in_statement(atom_t &$$, atom_t &atom_if_exp, ato
   $$.next_list = _B.merge(atom_if_exp.false_list, atom_statement.next_list);
   $$.break_list = atom_statement.break_list;
   $$.continue_list = atom_statement.continue_list;
+}
+void Generator::makelist_boolean(atom_t &$$, bool is_true)
+{
+  auto label_index = _B.emit(branch_to_bp_llvm);
+  auto list = _B.makelist({label_index, FIRST});
+  if (is_true)
+    $$.true_list = list;
+  {
+  }
+  else
+  {
+    $$.false_list = list;
+  }
 }

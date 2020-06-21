@@ -1,0 +1,7 @@
+void main() {
+    if (5 > 100b and (6b / 0b) != 1)
+        print("wrong but at least didn't crash");
+
+    if (100 == 100b)
+        print("equal!");
+}

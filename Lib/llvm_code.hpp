@@ -29,7 +29,8 @@ define void @printi (i32) {
   ret void
 })";
 
-static const string branch_to_bp_llvm = R"(br label @)";
+static const string branch_to_bp_llvm = R"(br label @
+)";
 static const string ret_void_llvm = R"(ret void)";
 static const string ret_success_llvm = R"(ret i32 0)";
 static const string scope_end_llvm = R"(})";

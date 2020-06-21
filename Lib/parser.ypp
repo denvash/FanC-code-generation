@@ -117,6 +117,11 @@ M:
       _G->gen_bp_label($$);
     };
 
+N:
+    %empty                            {
+      _G->gen_bp_label_makelist($$);
+    };
+
 OpenScope:
     %empty                          {
       // debugPrint("OpenScope");
@@ -198,13 +203,18 @@ Statement:
       $$.quad = $2.quad;
       _G->gen_bp_boolean_exp($$, $1, $3);
     }
-    | IfExp M Statement CloseScope ELSE Statement %prec ELSE           {
+
+    | IfExp M Statement CloseScope ELSE N M Statement %prec ELSE           {
       // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
-      // _B.bpatch($3.true_list,$$.quad);
-      // _B.bpatch($3.false_list,$$.quad);
-      // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
-      // $$.break_list = _B.merge($3.break_list, $7.break_list);
-      // $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
+      auto if_quad = $2.quad;
+      auto if_end_quad = $6.quad;
+      auto else_quad = $7.quad;
+      _B.bpatch($$.true_list,if_quad);
+      _B.bpatch($$.false_list,else_quad);
+
+      $$.next_list = _B.merge(_B.merge($1.next_list, $6.next_list), $7.next_list);
+      $$.break_list = _B.merge($3.break_list, $7.break_list);
+      $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
     }
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
@@ -313,12 +323,15 @@ Exp:
     | TRUE                          {
       $$.TYPE = TYPE_BOOL;
       $$.INT = 1;
+      _G->makelist_boolean($$,true);
     }
     | FALSE                         {
       $$.TYPE = TYPE_BOOL;
       $$.INT = 0;
+      _G->makelist_boolean($$,false);
     }
     | NOT Exp                       {
+      $$ = $2;
       $$.TYPE = TYPE_BOOL;
       $$.INT = !$1.INT;
     }
