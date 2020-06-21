@@ -251,6 +251,7 @@ Call:
 ExpList:
     Exp                             {
       // debugPrint("ExpList Exp");
+      _G->gen_eval_boolean($$,$1);
       $$.NODE = new ExpList($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
@@ -258,6 +259,7 @@ ExpList:
     /* Reverse Explist and Exp */
     | ExpList COMMA Exp             {
       // debugPrint("ExpList Exp COMMA ExpList");
+      _G->gen_eval_boolean($$,$3);
       $$.NODE = new ExpList($1, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();

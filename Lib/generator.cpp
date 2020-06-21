@@ -437,11 +437,31 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &
     $$.true_list = _B.merge(atom_left.true_list, atom_right.true_list);
   }
 }
+
 void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
 {
   auto type = atom_exp.TYPE;
+  if (type == TYPE_BOOL)
+  {
+    auto target = _gen_var_llvm();
+    auto unused_index = _B.emit(branch_to_bp_llvm);
 
-  debugGenerator("Eval type", type_to_string_map[type]);
+    auto true_label = _B.genLabel();
+    _B.bpatch(_B.makelist({unused_index, FIRST}), true_label);
+    auto true_index = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.true_list, true_label);
+
+    auto false_label = _B.genLabel();
+    _B.bpatch(_B.makelist({unused_index, FIRST}), false_label);
+    auto false_index = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.false_list, false_label);
+
+    auto next_label = _B.genLabel();
+    _B.bpatch(_B.makelist({true_index, FIRST}), next_label);
+    _B.bpatch(_B.makelist({false_index, FIRST}), next_label);
+    _B.emit(phi_eval_llvm(target, true_label, false_label));
+    $$.place = target;
+  }
 }
 
 void Generator::gen_bp_boolean_exp(atom_t &$$, atom_t &atom_if_exp, atom_t &atom_statement)
@@ -477,8 +497,10 @@ void Generator::makelist_boolean(atom_t &$$, bool is_true)
 
 void Generator::pb_short_circuit(atom_t &atom_statements, atom_t &atom_marker, atom_t &atom_statement)
 {
+  // debugGenerator("Check short circuit");
   if (atom_marker.is_return == false)
   {
+    // debugGenerator("Short circuit");
     _B.bpatch(atom_statements.next_list, atom_marker.quad);
   }
 }

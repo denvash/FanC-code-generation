@@ -137,3 +137,7 @@ string assign_relop_llvm(string target, string op, string left, string right)
 {
   return target + " = icmp " + op + " i32 " + left + ", " + right;
 }
+string phi_eval_llvm(string target, string true_label, string false_label)
+{
+  return target + " = phi i32 [ 1, %" + true_label + " ] , [ 0, %" + false_label + "]";
+}
