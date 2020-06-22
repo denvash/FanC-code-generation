@@ -342,6 +342,7 @@ void Generator::gen_id(atom_t &$$, atom_t &atom_id)
   // debugGenerator("args size", args_size_str);
   // debugGenerator("offset", to_string(id_offset));
   // debugGenerator("atom id type:", type_to_string_map[id_type]);
+  // debugGenerator("atom id type2:", type_to_string_map[atom_id.TYPE]);
 
   _B.emit(declare_var_llvm(source, args_size_str, id_offset));
   _B.emit(load_to_register_llvm(target, source));
@@ -443,9 +444,13 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &
 
 void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
 {
-  auto type = atom_exp.TYPE;
+  auto type = $$.TYPE;
+  // debugGenerator("Type eval:", type_to_string_map[type]);
+  // debugGenerator("Exp name:", *atom_exp.STRING);
   if (type == TYPE_BOOL)
   {
+
+    // debugGenerator("Gen eval boolean called");
     auto target = _gen_var_llvm();
     auto unused_index = _B.emit(branch_to_bp_llvm);
 
@@ -464,6 +469,7 @@ void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
     _B.bpatch(_B.makelist({false_index, FIRST}), next_label);
     _B.emit(phi_eval_llvm(target, true_label, false_label));
     $$.place = target;
+    // debugGenerator("Gen place", $$.place);
   }
 }
 
@@ -490,6 +496,7 @@ void Generator::makelist_boolean(atom_t &$$, bool is_true)
   auto list = _B.makelist({label_index, FIRST});
   if (is_true)
   {
+    // debugGenerator("true list makelist assigned");
     $$.true_list = list;
   }
   else

@@ -1,0 +1,8 @@
+//order of params
+bool f3(bool c) {
+    return c;
+}
+
+void main() {
+    f3(true);
+}

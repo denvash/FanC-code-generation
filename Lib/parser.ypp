@@ -172,12 +172,12 @@ Statement:
       _B.bpatch($3.next_list,$4.quad);
     }
     | Type ID SC                                                {
-      // debugPrint("Statement Type ID SC");
+      debugPrint("Statement Type ID SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
     }
     | Type ID ASSIGN Exp SC                                     {
-      // debugPrint("Statement Type ID ASSIGN Exp SC");
+      debugPrint("Statement Type ID ASSIGN Exp SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
       assign_value($2,$4);
@@ -188,7 +188,8 @@ Statement:
       _G->gen_assign($$,$1,$2,$3);
     }
     | Call SC                                                   {
-      // debugPrint("Call SC");
+      // debugPrint("Statement Call SC");
+      $$ = $1;
     }
     | RETURN SC                                                 {
       // debugPrint("Statement RETURN SC");
@@ -223,11 +224,13 @@ Statement:
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
     | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
     | BREAK SC                                                  {
+      debugPrint("BREAK SC");
       if (while_scope_count <= 0) {
         err(output::errorUnexpectedBreak, yylineno);
       }
     }
     | CONTINUE SC                                               {
+      debugPrint("CONTINUE SC");
       if (while_scope_count <= 0) {
         err(output::errorUnexpectedContinue, yylineno);
       }
@@ -251,18 +254,18 @@ Call:
 ExpList:
     Exp                             {
       // debugPrint("ExpList Exp");
-      _G->gen_eval_boolean($$,$1);
       $$.NODE = new ExpList($1);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_eval_boolean($$,$1);
     }
     /* Reverse Explist and Exp */
     | ExpList COMMA Exp             {
       // debugPrint("ExpList Exp COMMA ExpList");
-      _G->gen_eval_boolean($$,$3);
       $$.NODE = new ExpList($1, $3);
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
+      _G->gen_eval_boolean($$,$3);
     };
 
 Type:
@@ -327,11 +330,14 @@ Exp:
       _G->gen_string($$);
     }
     | TRUE                          {
+      // debugPrint("Exp TRUE");
+      $$ = $1;
       $$.TYPE = TYPE_BOOL;
       $$.INT = 1;
       _G->makelist_boolean($$,true);
     }
     | FALSE                         {
+      $$ = $1;
       $$.TYPE = TYPE_BOOL;
       $$.INT = 0;
       _G->makelist_boolean($$,false);
