@@ -213,7 +213,7 @@ Statement:
       $$.quad = $2.quad;
       _G->gen_bp_boolean_exp($$, $1, $3);
     }
-
+    //  $1  $2   $3                    $6 $7  $8
     | IfExp M Statement CloseScope ELSE N M Statement %prec ELSE           {
       // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
       auto if_quad = $2.quad;
@@ -232,20 +232,23 @@ Statement:
       _B.bpatch($1.true_list, $4.quad);
       _G->gen_bp_loop($$,$1,$5);
     }
-    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut ELSE Statement {
-      debugPrint("While else");
+    //    $1                           $4   $5                             $9 $10  $11
+    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut ELSE N M Statement {
+      // debugPrint("While else");
     }
     | BREAK SC                                                  {
-      debugPrint("BREAK SC");
+      // debugPrint("BREAK SC");
       if (while_scope_count <= 0) {
         err(output::errorUnexpectedBreak, yylineno);
       }
+      _G->gen_br_to_bp($$,true);
     }
     | CONTINUE SC                                               {
-      debugPrint("CONTINUE SC");
+      // debugPrint("CONTINUE SC");
       if (while_scope_count <= 0) {
         err(output::errorUnexpectedContinue, yylineno);
       }
+      _G->gen_br_to_bp($$,false);
     };
 
 Call:

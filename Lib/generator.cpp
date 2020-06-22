@@ -598,3 +598,17 @@ void Generator::gen_typed_id(atom_t &atom_id)
   _B.emit(store_arg_through_place_llvm("0", target));
   _B.emit(declare_var_llvm(target, "0", id_offset));
 }
+
+void Generator::gen_br_to_bp(atom_t &$$, bool is_break)
+{
+  auto label_index = _B.emit(branch_to_bp_llvm);
+  auto list = _B.makelist({label_index, FIRST});
+  if (is_break)
+  {
+    $$.break_list = list;
+  }
+  else
+  {
+    $$.continue_list = list;
+  }
+}
