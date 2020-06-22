@@ -292,14 +292,8 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
   $$.place = target;
 }
 
-void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, atom_t &atom_exp)
+void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_exp)
 {
-  if (atom_assign.TYPE == TYPE_BOOL)
-  {
-    debugGenerator("Boolean Assign");
-    return;
-  }
-
   // debugGenerator("Non Boolean Assign");
   auto target = _gen_var_llvm();
 
@@ -313,11 +307,72 @@ void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_assign, ato
   auto id_offset = id_entry.offset;
   // debugGenerator("offset:", to_string(id_offset));
 
+  auto value = to_string(atom_exp.INT);
+  auto exp_place = atom_exp.place;
+
+  /* The values to use */
+  auto place = exp_place == "" ? value : exp_place;
+
   _B.emit(declare_var_llvm(target, args_size_str, id_offset));
 
-  _B.emit(store_arg_through_place_llvm(atom_exp.place, target));
+  _B.emit(store_arg_through_place_llvm(exp_place, target));
   $$.next_list = atom_exp.next_list;
 }
+
+void Generator::gen_assign_typed(atom_t &$$, atom_t &atom_type, atom_t &atom_id, atom_t &atom_exp)
+{
+  auto type = atom_exp.TYPE;
+
+  auto atom_func = table.get_last_function_in_scope();
+  auto func_name = atom_func->name;
+
+  auto args_size = table.get_total_args(func_name);
+  auto args_size_str = to_string(args_size);
+
+  auto id_entry = table.get_entry(*atom_id.STRING);
+  auto id_offset = id_entry.offset;
+
+  auto value = to_string(atom_exp.INT);
+  auto exp_place = atom_exp.place;
+
+  /* The values to use */
+  auto place = exp_place == "" ? value : exp_place;
+
+  if (type != TYPE_BOOL)
+  {
+    auto target = _gen_var_llvm();
+    _B.emit(declare_var_llvm(target, args_size_str, id_offset));
+    _B.emit(store_arg_through_place_llvm(place, target));
+    $$.next_list = atom_exp.next_list;
+  }
+  else
+  {
+    auto true_temp = _gen_var_llvm();
+    auto false_temp = _gen_var_llvm();
+
+    auto unused_index = _B.emit(branch_to_bp_llvm);
+    auto true_label = _B.genLabel();
+    _B.bpatch(_B.makelist({unused_index, FIRST}), true_label);
+
+    _B.emit(declare_var_llvm(true_temp, "0", id_offset));
+    _B.emit(store_arg_through_place_llvm("1", true_temp));
+
+    auto true_index_patch = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.true_list, true_label);
+
+    auto false_label = _B.genLabel();
+    _B.emit(declare_var_llvm(false_temp, "0", id_offset));
+    _B.emit(store_arg_through_place_llvm("1", false_temp));
+
+    auto false_index_patch = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.false_list, false_label);
+
+    auto true_list = _B.makelist({true_index_patch, FIRST});
+    auto false_list = _B.makelist({false_index_patch, FIRST});
+    $$.next_list = _B.merge(true_list, false_list);
+  }
+}
+
 void Generator::gen_id(atom_t &$$, atom_t &atom_id)
 {
   // debugGenerator("Generating Id");
@@ -449,7 +504,6 @@ void Generator::gen_eval_boolean(atom_t &$$, atom_t &atom_exp)
   // debugGenerator("Exp name:", *atom_exp.STRING);
   if (type == TYPE_BOOL)
   {
-
     // debugGenerator("Gen eval boolean called");
     auto target = _gen_var_llvm();
     auto unused_index = _B.emit(branch_to_bp_llvm);
@@ -513,4 +567,34 @@ void Generator::pb_short_circuit(atom_t &atom_statements, atom_t &atom_marker, a
     // debugGenerator("Short circuit");
     _B.bpatch(atom_statements.next_list, atom_marker.quad);
   }
+}
+
+void Generator::gen_bp_loop(atom_t &$$, atom_t &atom_while_exp, atom_t &atom_statement)
+{
+  // debugGenerator("loop quad:", atom_while_exp.quad);
+
+  _B.bpatch(atom_statement.next_list, atom_while_exp.quad);
+  _B.bpatch(atom_statement.continue_list, atom_while_exp.quad);
+
+  $$.next_list = _B.merge(atom_while_exp.false_list, atom_statement.break_list);
+
+  auto label_index = _B.emit(br_loop_llvm(atom_while_exp.quad));
+  _B.bpatch(_B.makelist({label_index, FIRST}), atom_while_exp.quad);
+}
+
+void Generator::gen_typed_id(atom_t &atom_id)
+{
+  auto target = _gen_var_llvm();
+
+  auto atom_func = table.get_last_function_in_scope();
+  auto func_name = atom_func->name;
+
+  auto args_size = table.get_total_args(func_name);
+  auto args_size_str = to_string(args_size);
+
+  auto id_entry = table.get_entry(*atom_id.STRING);
+  auto id_offset = id_entry.offset;
+
+  _B.emit(store_arg_through_place_llvm("0", target));
+  _B.emit(declare_var_llvm(target, "0", id_offset));
 }

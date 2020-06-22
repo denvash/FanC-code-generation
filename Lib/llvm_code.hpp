@@ -141,3 +141,8 @@ string phi_eval_llvm(string target, string true_label, string false_label)
 {
   return target + " = phi i32 [ 1, %" + true_label + " ] , [ 0, %" + false_label + "]";
 }
+
+string br_loop_llvm(string target)
+{
+  return "br label %" + target;
+}

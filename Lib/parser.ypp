@@ -155,10 +155,13 @@ WhileOut:
     };
 
 WhileTypeCheck:
-   WHILE LPAREN Exp RPAREN          {
-      if ( $3.TYPE != TYPE_BOOL) {
+   WHILE M LPAREN Exp RPAREN          {
+      if ($4.TYPE != TYPE_BOOL) {
         err(output::errorMismatch, yylineno);
       }
+      $$.true_list = $4.true_list;
+      $$.false_list = $4.false_list;
+      $$.quad = $2.quad;
    };
 
 Statement:
@@ -172,20 +175,22 @@ Statement:
       _B.bpatch($3.next_list,$4.quad);
     }
     | Type ID SC                                                {
-      debugPrint("Statement Type ID SC");
+      // debugPrint("Statement Type ID SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
+      _G->gen_typed_id($2);
     }
     | Type ID ASSIGN Exp SC                                     {
-      debugPrint("Statement Type ID ASSIGN Exp SC");
+      // debugPrint("Statement Type ID ASSIGN Exp SC");
       $2.TYPE = $1.TYPE;
       variable_init($2,true);
       assign_value($2,$4);
+      _G->gen_assign_typed($$,$1,$2,$4);
     }
     | ID ASSIGN Exp SC                                          {
       // debugPrint("Statement ID ASSIGN Exp SC");
       assign_value($1,$3);
-      _G->gen_assign($$,$1,$2,$3);
+      _G->gen_assign($$,$1,$3);
     }
     | Call SC                                                   {
       // debugPrint("Statement Call SC");
@@ -221,8 +226,15 @@ Statement:
       $$.break_list = _B.merge($3.break_list, $7.break_list);
       $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
     }
-    | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut %prec NOELSE   {}
-    | WhileTypeCheck OpenScope WhileIn Statement CloseScope WhileOut ELSE Statement {}
+    //    $1                           $4   $5
+    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut %prec NOELSE   {
+      // debugPrint("While noelse");
+      _B.bpatch($1.true_list, $4.quad);
+      _G->gen_bp_loop($$,$1,$5);
+    }
+    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut ELSE Statement {
+      debugPrint("While else");
+    }
     | BREAK SC                                                  {
       debugPrint("BREAK SC");
       if (while_scope_count <= 0) {
