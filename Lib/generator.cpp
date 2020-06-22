@@ -335,20 +335,23 @@ void Generator::gen_id(atom_t &$$, atom_t &atom_id)
   auto args_size_str = to_string(args_size);
 
   auto id_offset = id_entry.offset;
+  auto id_type = $$.TYPE;
 
   // debugGenerator("atom id:", *atom_id.STRING);
   // debugGenerator("func name:", func_name);
   // debugGenerator("args size", args_size_str);
   // debugGenerator("offset", to_string(id_offset));
+  // debugGenerator("atom id type:", type_to_string_map[id_type]);
 
   _B.emit(declare_var_llvm(source, args_size_str, id_offset));
   _B.emit(load_to_register_llvm(target, source));
   $$.place = target;
 
-  if (atom_id.TYPE == TYPE_BOOL)
+  if (id_type == TYPE_BOOL)
   {
+    // debugGenerator("boolean type by value");
     auto target_boolean = _gen_var_llvm();
-    _B.emit(compare_boolean_llvm(target_boolean, source));
+    _B.emit(compare_boolean_llvm(target_boolean, target));
     auto branch_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
     auto unconditional_list = _B.makelist({branch_index, FIRST});
     auto conditional_list = _B.makelist({branch_index, SECOND});
