@@ -294,7 +294,6 @@ void Generator::gen_binop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
 
 void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_exp)
 {
-  // debugGenerator("Non Boolean Assign");
   auto target = _gen_var_llvm();
 
   auto atom_func = table.get_last_function_in_scope();
@@ -313,10 +312,39 @@ void Generator::gen_assign(atom_t &$$, atom_t &atom_id, atom_t &atom_exp)
   /* The values to use */
   auto place = exp_place == "" ? value : exp_place;
 
-  _B.emit(declare_var_llvm(target, args_size_str, id_offset));
+  if (atom_exp.TYPE != TYPE_BOOL)
+  {
+    auto target = _gen_var_llvm();
+    _B.emit(declare_var_llvm(target, args_size_str, id_offset));
+    _B.emit(store_arg_through_place_llvm(place, target));
+    $$.next_list = atom_exp.next_list;
+  }
+  else
+  {
+    auto true_temp = _gen_var_llvm();
+    auto false_temp = _gen_var_llvm();
 
-  _B.emit(store_arg_through_place_llvm(exp_place, target));
-  $$.next_list = atom_exp.next_list;
+    auto unused_index = _B.emit(branch_to_bp_llvm);
+    auto true_label = _B.genLabel();
+    _B.bpatch(_B.makelist({unused_index, FIRST}), true_label);
+
+    _B.emit(declare_var_llvm(true_temp, args_size_str, id_offset));
+    _B.emit(store_arg_through_place_llvm("1", true_temp));
+
+    auto true_index_patch = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.true_list, true_label);
+
+    auto false_label = _B.genLabel();
+    _B.emit(declare_var_llvm(false_temp, args_size_str, id_offset));
+    _B.emit(store_arg_through_place_llvm("0", false_temp));
+
+    auto false_index_patch = _B.emit(branch_to_bp_llvm);
+    _B.bpatch(atom_exp.false_list, false_label);
+
+    auto true_list = _B.makelist({true_index_patch, FIRST});
+    auto false_list = _B.makelist({false_index_patch, FIRST});
+    $$.next_list = _B.merge(true_list, false_list);
+  }
 }
 
 void Generator::gen_assign_typed(atom_t &$$, atom_t &atom_type, atom_t &atom_id, atom_t &atom_exp)
