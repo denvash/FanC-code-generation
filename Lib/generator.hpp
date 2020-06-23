@@ -62,6 +62,7 @@ public:
   void makelist_boolean(atom_t &, bool);
   void pb_short_circuit(atom_t &, atom_t &, atom_t &);
   void gen_bp_loop(atom_t &, atom_t &, atom_t &);
+  void gen_bp_loop_else(atom_t &, atom_t &, atom_t &,atom_t &);
   void gen_typed_id(atom_t &);
   void gen_br_to_bp(atom_t &, bool);
 };

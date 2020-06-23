@@ -232,9 +232,14 @@ Statement:
       _B.bpatch($1.true_list, $4.quad);
       _G->gen_bp_loop($$,$1,$5);
     }
-    //    $1                           $4   $5                             $9 $10  $11
-    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut ELSE N M Statement {
+    //    $1                           $4   $5                              $9  $10
+    | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut N ELSE  M Statement {
       // debugPrint("While else");
+      _B.bpatch($1.true_list, $4.quad);
+      _B.bpatch($1.false_list, $10.quad);
+      // _B.bpatch($5.break_list, $10.quad);
+      _B.bpatch($8.next_list, $1.quad);
+      _G->gen_bp_loop_else($$,$1,$5,$11);
     }
     | BREAK SC                                                  {
       // debugPrint("BREAK SC");
