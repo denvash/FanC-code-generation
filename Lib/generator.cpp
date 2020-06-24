@@ -121,8 +121,11 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   /* Cut the last "," */
   args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
   // debugGenerator("func name", func_name);
+  // if($$.TYPE==TYPE_BOOL)
+  //   debugGenerator("func type : bool");
 
   auto call_exp_llvm = call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm);
+  // debugGenerator("func output:"+ call_exp_llvm);
 
   if (function_type == TYPE_VOID)
   {
@@ -147,7 +150,9 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
       $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
                               (_B.makelist({label_index, SECOND})));
     }
+
   }
+  // debugGenerator("-------------");
 }
 
 /* Func call without args */
@@ -525,7 +530,7 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &
     _B.bpatch(atom_left.true_list, $$.quad);
     $$.true_list = atom_right.true_list;
     $$.false_list = _B.merge(atom_left.false_list, atom_right.false_list);
-    $$.next_list = $$.false_list;
+    // $$.next_list = $$.false_list;
   }
   else if (op == OR)
   {
@@ -623,23 +628,12 @@ void Generator::gen_bp_loop(atom_t &$$, atom_t &atom_while_exp, atom_t &atom_sta
 void Generator::gen_bp_loop_else(atom_t &$$, atom_t &atom_while_exp, atom_t &atom_statement1,atom_t &atom_statement2)
 {
   // debugGenerator("loop quad:", atom_while_exp.quad);
-  // _B.bpatch(atom_statement1.next_list, atom_while_exp.quad);
   _B.bpatch(atom_statement1.continue_list, atom_while_exp.quad);
 
   $$.next_list = _B.merge(atom_statement1.break_list, atom_statement2.break_list);
   $$.next_list = _B.merge($$.next_list,atom_statement2.next_list);
 
-  // auto label_index = _B.emit(br_loop_llvm(atom_while_exp.quad));
-  // _B.bpatch(_B.makelist({label_index, FIRST}), atom_while_exp.quad);
-
 }
-
-void Generator::gen_ret_to_while( atom_t &atom_while_exp){
-      auto label_index = _B.emit(br_loop_llvm(atom_while_exp.quad));
-    _B.bpatch(_B.makelist({label_index, FIRST}), atom_while_exp.quad);
-}
-
-
 
 
 void Generator::gen_typed_id(atom_t &atom_id)

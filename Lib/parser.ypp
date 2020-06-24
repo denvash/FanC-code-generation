@@ -210,7 +210,6 @@ Statement:
         _B.bpatch($2.true_list,$3.quad); 
         _B.bpatch($2.false_list,$3.quad); 
       }
-      
            $$.is_return = true;
     }
     | IfExp M Statement %prec NOELSE CloseScope               {
@@ -221,16 +220,14 @@ Statement:
     //  $1  $2   $3                    $6 $7  $8
     | IfExp M Statement CloseScope ELSE N M Statement %prec ELSE           {
       // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
-      auto if_quad = $2.quad;
-      // auto if_end_quad = $6.quad;
-      auto else_quad = $7.quad;
-      _B.bpatch($$.true_list,if_quad);
-      _B.bpatch($$.false_list,else_quad);
+      _B.bpatch($1.true_list,$2.quad);
+      _B.bpatch($1.false_list,$7.quad);
+      // _B.bpatch($6.next_list,$7.quad);
 
-      $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $8.next_list);
-      // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
+      $$.next_list = _B.merge($3.next_list, $8.next_list);
+      $$.next_list = _B.merge($$.next_list, $6.next_list);
       $$.break_list = _B.merge($3.break_list, $8.break_list);
-      $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
+      $$.continue_list = _B.merge($3.continue_list, $8.continue_list);
     }
     //    $1                           $4   $5
     | WhileTypeCheck OpenScope WhileIn M Statement CloseScope WhileOut %prec NOELSE   {
