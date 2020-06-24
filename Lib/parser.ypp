@@ -202,11 +202,16 @@ Statement:
       _G->gen_return($$);
       $$.is_return = true;
     }
-    | RETURN Exp SC                                             {
+    | RETURN Exp M SC                                             {
       // debugPrint("Statement RETURN Exp SC");
       return_value_check($2.TYPE);
       _G->gen_return_exp($$,$2);
-      $$.is_return = true;
+      if($2.TYPE==TYPE_BOOL){
+        _B.bpatch($2.true_list,$3.quad); 
+        _B.bpatch($2.false_list,$3.quad); 
+      }
+      
+           $$.is_return = true;
     }
     | IfExp M Statement %prec NOELSE CloseScope               {
       // debugPrint("Statement IfExp Statement %prec NOELSE CloseScope");
@@ -217,13 +222,14 @@ Statement:
     | IfExp M Statement CloseScope ELSE N M Statement %prec ELSE           {
       // debugPrint("IfExp M Statement CloseScope ELSE M Statement %prec ELSE");
       auto if_quad = $2.quad;
-      auto if_end_quad = $6.quad;
+      // auto if_end_quad = $6.quad;
       auto else_quad = $7.quad;
       _B.bpatch($$.true_list,if_quad);
       _B.bpatch($$.false_list,else_quad);
 
-      $$.next_list = _B.merge(_B.merge($1.next_list, $6.next_list), $7.next_list);
-      $$.break_list = _B.merge($3.break_list, $7.break_list);
+      $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $8.next_list);
+      // $$.next_list = _B.merge(_B.merge($1.next_list, $3.next_list), $7.next_list);
+      $$.break_list = _B.merge($3.break_list, $8.break_list);
       $$.continue_list = _B.merge($3.continue_list, $7.continue_list);
     }
     //    $1                           $4   $5

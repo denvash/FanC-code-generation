@@ -51,8 +51,12 @@ void Generator::func_init(atom_t &$$)
 
   auto total_args_str = to_string(total_args);
   // debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + total_args_str);
-
+  // if($$.TYPE==TYPE_BOOL){
+  // _B.emit(define_bool_func_llvm(total_args, func_id));
+  // }else{
   _B.emit(define_func_llvm(type == TYPE_VOID, total_args, func_id));
+  // }
+
   _B.emit(func_entry_llvm);
 
   if (total_args > 0)
@@ -455,7 +459,13 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   auto place = atom_exp.place;
   auto value = to_string(atom_exp.INT);
   auto source = place == "" ? value : place;
-  _B.emit(ret_exp_llvm(source));
+  auto byteExp=_gen_var_llvm();
+  if(atom_exp.TYPE==TYPE_BOOL){
+    _B.emit(zext(byteExp,value,"i1","i32"));
+    _B.emit(ret_exp_llvm(byteExp));
+  }else{
+    _B.emit(ret_exp_llvm(source));
+  }
   $$.next_list = atom_exp.next_list;
 }
 
