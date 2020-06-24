@@ -127,10 +127,17 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   auto call_exp_llvm = call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm);
   // debugGenerator("func output:"+ call_exp_llvm);
 
+
+
+
+
   if (function_type == TYPE_VOID)
   {
-    _B.emit(call_exp_llvm);
+    auto firstLine = _B.emit(call_exp_llvm);
     $$.place = PLACE_VOID;
+    _B.bpatch(atom_exp_list.false_list,to_string(firstLine)); 
+    _B.bpatch(atom_exp_list.true_list,to_string(firstLine)); 
+    _B.bpatch(atom_exp_list.next_list,to_string(firstLine)); 
   }
   /* There is a return type */
   else
@@ -537,6 +544,11 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &
     _B.bpatch(atom_left.false_list, $$.quad);
     $$.false_list = atom_right.false_list;
     $$.true_list = _B.merge(atom_left.true_list, atom_right.true_list);
+    // auto leftLogical = _gen_var_llvm();
+  // _B.emit(assign_relop_llvm(leftLogical, "ne", "0", to_string(atom_left.INT)));
+  //     auto rightLogical = _gen_var_llvm();
+  // _B.emit(assign_relop_llvm(leftLogical, "ne", "0", to_string(atom_right.INT)));
+  // $$.place=leftLogical+rightLogical;
   }
 }
 
