@@ -63,6 +63,7 @@ public:
   void pb_short_circuit(atom_t &, atom_t &, atom_t &);
   void gen_bp_loop(atom_t &, atom_t &, atom_t &);
   void gen_bp_loop_else(atom_t &, atom_t &, atom_t &,atom_t &);
+  void gen_ret_to_while( atom_t &atom_while_exp);
   void gen_typed_id(atom_t &);
   void gen_br_to_bp(atom_t &, bool);
 };
