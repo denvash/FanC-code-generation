@@ -150,8 +150,8 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
       $$.true_list = _B.makelist({label_index, FIRST});
       $$.false_list = _B.makelist({label_index, SECOND});
-      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
-                              (_B.makelist({label_index, SECOND})));
+      // $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
+      //                         (_B.makelist({label_index, SECOND})));
     }
 
   }

@@ -388,6 +388,9 @@ Exp:
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
       $$.quad = $3.quad;
+      if($1.place=="" && $3.place==""){
+
+      }
       _G->gen_logicalop($$,$1,"and",$4);
     }
     | Exp OR M Exp             {

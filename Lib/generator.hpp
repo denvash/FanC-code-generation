@@ -66,6 +66,8 @@ public:
   void gen_typed_id(atom_t &);
   void gen_br_to_bp(atom_t &, bool);
   void flip_bool(atom_t &,atom_t &);
+  void and_bool(atom_t &,atom_t &,atom_t &);
+  void or_bool(atom_t &,atom_t &,atom_t &);
 };
 
 inline void debugGenerator(string text)
