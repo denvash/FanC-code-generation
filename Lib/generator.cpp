@@ -128,9 +128,6 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   // debugGenerator("func output:"+ call_exp_llvm);
 
 
-
-
-
   if (function_type == TYPE_VOID)
   {
     auto firstLine = _B.emit(call_exp_llvm);
@@ -148,7 +145,6 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
     if (function_type == TYPE_BOOL)
     {
-      // debugGenerator("Bool type func");
       auto target_boolean = _gen_var_llvm();
       _B.emit(compare_boolean_llvm(target_boolean, target));
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
@@ -171,6 +167,9 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id)
   auto no_args = "";
 
   auto is_void_func = func_type == TYPE_VOID;
+  // debugGenerator("func call without args", func_name);
+  // debugGenerator("func call without args", func_name);
+
   auto call_llvm = call_function_llvm(is_void_func, func_name, no_args);
 
   // debugGenerator("func call without args", func_name);
@@ -194,7 +193,7 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id)
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_bool));
       $$.true_list = _B.makelist({label_index, FIRST});
       $$.false_list = _B.makelist({label_index, SECOND});
-      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})), _B.makelist({label_index, SECOND}));
+      // $$.next_list = _B.merge((_B.makelist({label_index, FIRST})), _B.makelist({label_index, SECOND}));
     }
   }
 }
@@ -473,8 +472,13 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   auto source = place == "" ? value : place;
   auto byteExp=_gen_var_llvm();
   if(atom_exp.TYPE==TYPE_BOOL){
-    _B.emit(zext(byteExp,value,"i1","i32"));
-    _B.emit(ret_exp_llvm(byteExp));
+    if(atom_exp.place==""){
+      _B.emit(zext(byteExp,value,"i1","i32"));
+      _B.emit(ret_exp_llvm(byteExp));
+    }else{
+      _B.emit(ret_exp_llvm(place));
+    }
+    
   }else{
     _B.emit(ret_exp_llvm(source));
   }
@@ -678,3 +682,14 @@ void Generator::gen_br_to_bp(atom_t &$$, bool is_break)
     $$.continue_list = list;
   }
 }
+
+
+void Generator::flip_bool(atom_t &$$,atom_t &atom_exp)
+{
+  auto flippedBool = _gen_var_llvm();
+  auto newPlace = _gen_var_llvm();
+  _B.emit(negate_bool(flippedBool,atom_exp.place));
+  _B.emit(zext(newPlace,flippedBool,"i1","i32"));
+  $$.place=newPlace;
+}
+

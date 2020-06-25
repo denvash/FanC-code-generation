@@ -375,7 +375,10 @@ Exp:
     | NOT Exp                       {
       $$ = $2;
       $$.TYPE = TYPE_BOOL;
-      $$.INT = !$1.INT;
+      $$.INT = !$2.INT;
+      if($2.place!=""){
+        _G->flip_bool($$,$2);
+      }
       $$.true_list = $2.false_list;
       $$.false_list = $2.true_list;
     }

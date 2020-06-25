@@ -143,6 +143,11 @@ string compare_boolean_llvm(string target, string source)
   return target + " = icmp ne i32 0, " + source;
 }
 
+string negate_bool(string target, string source)
+{
+  return target + " = icmp ne i32 1, " + source;
+}
+
 string ret_exp_llvm(string source)
 {
   return "ret i32 " + source;
