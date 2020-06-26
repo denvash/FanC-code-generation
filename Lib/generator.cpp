@@ -475,18 +475,7 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   auto place = atom_exp.place;
   auto value = to_string(atom_exp.INT);
   auto source = place == "" ? value : place;
-  auto byteExp=_gen_var_llvm();
-  // if(atom_exp.TYPE==TYPE_BOOL){
-  //   if(atom_exp.place==""){
-  //     _B.emit(zext(byteExp,value,"i1","i32"));
-  //     _B.emit(ret_exp_llvm(byteExp));
-  //   }else{
-  //     _B.emit(ret_exp_llvm(place));
-  //   }
-    
-  // }else{
-    _B.emit(ret_exp_llvm(source));
-  // }
+  _B.emit(ret_exp_llvm(source));
   $$.next_list = atom_exp.next_list;
 }
 
@@ -543,12 +532,15 @@ void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     op_llvm = "ne";
   }
   auto target = _gen_var_llvm();
+  auto finalRes = _gen_var_llvm();
   _B.emit(assign_relop_llvm(target, op_llvm, left, right));
   // debugGenerator("label branch", target);
   auto label_index = _B.emit(branch_conditional_to_bp_llvm(target));
+  _B.emit(zext(finalRes,target,"i1","i32"));
   $$.true_list = _B.makelist({label_index, FIRST});
   $$.false_list = _B.makelist({label_index, SECOND});
-  $$.place = target;
+  // $$.place = target;
+  $$.place = finalRes;
 }
 void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &atom_right)
 {
