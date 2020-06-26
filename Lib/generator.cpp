@@ -82,6 +82,11 @@ void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
   // debugGenerator("Func end label: ", label);
   _B.bpatch(_B.makelist({branch_to_bp, FIRST}), label);
   _B.bpatch(atom_statement.next_list, label);
+  if(atom_statement.TYPE==TYPE_BOOL){
+  _B.bpatch(atom_statement.true_list, label);
+  _B.bpatch(atom_statement.false_list, label);
+  }
+
   _B.emit(atom_id.TYPE == TYPE_VOID ? ret_void_llvm : ret_success_llvm);
   _B.emit(scope_end_llvm);
 }
@@ -405,7 +410,7 @@ void Generator::gen_assign_typed(atom_t &$$, atom_t &atom_type, atom_t &atom_id,
 
     auto false_label = _B.genLabel();
     _B.emit(declare_var_llvm(false_temp, "0", id_offset));
-    _B.emit(store_arg_through_place_llvm("1", false_temp));
+    _B.emit(store_arg_through_place_llvm("0", false_temp));
 
     auto false_index_patch = _B.emit(branch_to_bp_llvm);
     _B.bpatch(atom_exp.false_list, false_label);

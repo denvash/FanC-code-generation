@@ -378,6 +378,10 @@ Exp:
       $$ = $2;
       $$.TYPE = TYPE_BOOL;
       $$.INT = !$2.INT;
+      if($2.place!=""){
+        _G->flip_bool($$,$2);
+
+      }
       $$.true_list = $2.false_list;
       $$.false_list = $2.true_list;
     }
@@ -387,9 +391,6 @@ Exp:
       $$.INT = $$.NODE->get_value();
       $$.TYPE = $$.NODE->get_type();
       $$.quad = $3.quad;
-      if($1.place=="" && $3.place==""){
-
-      }
       _G->gen_logicalop($$,$1,"and",$4);
     }
     | Exp OR M Exp             {
