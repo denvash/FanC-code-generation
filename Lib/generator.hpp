@@ -53,6 +53,7 @@ public:
   void gen_id(atom_t &, atom_t &);
   void gen_return(atom_t &);
   void gen_return_exp(atom_t &, atom_t &);
+  void gen_bool_return_exp(atom_t &, atom_t &);
   void gen_relop(atom_t &, atom_t &, atom_t &, atom_t &);
   void gen_logicalop(atom_t &, atom_t &, string op, atom_t &);
   void gen_bp_label_makelist(atom_t &);

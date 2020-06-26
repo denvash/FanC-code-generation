@@ -471,18 +471,31 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   auto value = to_string(atom_exp.INT);
   auto source = place == "" ? value : place;
   auto byteExp=_gen_var_llvm();
-  if(atom_exp.TYPE==TYPE_BOOL){
-    if(atom_exp.place==""){
-      _B.emit(zext(byteExp,value,"i1","i32"));
-      _B.emit(ret_exp_llvm(byteExp));
-    }else{
-      _B.emit(ret_exp_llvm(place));
-    }
+  // if(atom_exp.TYPE==TYPE_BOOL){
+  //   if(atom_exp.place==""){
+  //     _B.emit(zext(byteExp,value,"i1","i32"));
+  //     _B.emit(ret_exp_llvm(byteExp));
+  //   }else{
+  //     _B.emit(ret_exp_llvm(place));
+  //   }
     
-  }else{
+  // }else{
     _B.emit(ret_exp_llvm(source));
-  }
+  // }
   $$.next_list = atom_exp.next_list;
+}
+
+void Generator::gen_bool_return_exp(atom_t &trueCase, atom_t &falseCase)
+{
+  auto buffer_index = _B.emit(branch_to_bp_llvm);
+  auto trueLabel = _B.genLabel();
+  _B.bpatch(_B.makelist({buffer_index, FIRST}), trueLabel);
+  auto trueJump= _B.emit(ret_exp_llvm("1"));
+  auto falseLabel = _B.genLabel();
+  auto falseJump= _B.emit(ret_exp_llvm("0"));
+  _B.bpatch(trueCase.next_list,trueLabel);
+  _B.bpatch(falseCase.next_list,falseLabel);
+  // $$.next_list = atom_exp.next_list;
 }
 
 void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)

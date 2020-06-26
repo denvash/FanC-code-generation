@@ -202,15 +202,17 @@ Statement:
       _G->gen_return($$);
       $$.is_return = true;
     }
-    | RETURN Exp M SC                                             {
+    | RETURN Exp M N M N M SC                                             {
       // debugPrint("Statement RETURN Exp SC");
       return_value_check($2.TYPE);
- 
       if($2.TYPE==TYPE_BOOL){
-        _B.bpatch($2.true_list,$3.quad); 
-        _B.bpatch($2.false_list,$3.quad); 
+        _B.bpatch($2.true_list,$3.quad);
+        _B.bpatch($2.false_list,$5.quad);
+        _G->gen_bool_return_exp($4,$6);
+      }else{
+        _B.bpatch(_B.merge($4.next_list,$6.next_list),$7.quad);
+        _G->gen_return_exp($$,$2);
       }
-           _G->gen_return_exp($$,$2);
            $$.is_return = true;
     }
     | IfExp M Statement %prec NOELSE CloseScope               {
@@ -376,9 +378,6 @@ Exp:
       $$ = $2;
       $$.TYPE = TYPE_BOOL;
       $$.INT = !$2.INT;
-      if($2.place!=""){
-        _G->flip_bool($$,$2);
-      }
       $$.true_list = $2.false_list;
       $$.false_list = $2.true_list;
     }
