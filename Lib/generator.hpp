@@ -53,6 +53,7 @@ public:
   void gen_id(atom_t &, atom_t &);
   void gen_return(atom_t &);
   void gen_return_exp(atom_t &, atom_t &);
+  void gen_bool_return_exp(atom_t &, atom_t &);
   void gen_relop(atom_t &, atom_t &, atom_t &, atom_t &);
   void gen_logicalop(atom_t &, atom_t &, string op, atom_t &);
   void gen_bp_label_makelist(atom_t &);
@@ -62,8 +63,12 @@ public:
   void makelist_boolean(atom_t &, bool);
   void pb_short_circuit(atom_t &, atom_t &, atom_t &);
   void gen_bp_loop(atom_t &, atom_t &, atom_t &);
+  void gen_bp_loop_else(atom_t &, atom_t &, atom_t &,atom_t &);
   void gen_typed_id(atom_t &);
   void gen_br_to_bp(atom_t &, bool);
+  void flip_bool(atom_t &,atom_t &);
+  void and_bool(atom_t &,atom_t &,atom_t &);
+  void or_bool(atom_t &,atom_t &,atom_t &);
 };
 
 inline void debugGenerator(string text)

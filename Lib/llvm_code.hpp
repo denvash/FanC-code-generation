@@ -49,6 +49,18 @@ string call_print_llvm(string len, string source)
   return "call void @print (i8* getelementptr ([" + len + " x i8], [" + len + " x i8]* " + source + ", i32 0, i32 0))";
 }
 
+string define_bool_func_llvm(int size, string id)
+{
+  string type = "i1";
+  string args = "";
+  for (auto i = 0; i < size; i++)
+  {
+    args = args + "i32 ,";
+  }
+  args = args.substr(0, args.length() - 1);
+  return "define " + type + " @" + id + "(" + args + ") {";
+}
+
 string define_func_llvm(bool is_void_type, int size, string id)
 {
   string type = is_void_type ? "void" : "i32";
@@ -119,6 +131,8 @@ string assign_byte_overflow_llvm(string var, string value)
   return var + " = zext i8 " + value + " to i32";
 }
 
+
+
 string load_to_register_llvm(string target, string source)
 {
   return target + " = load i32, i32* " + source;
@@ -129,10 +143,21 @@ string compare_boolean_llvm(string target, string source)
   return target + " = icmp ne i32 0, " + source;
 }
 
+string negate_bool(string target, string source)
+{
+  return target + " = icmp ne i32 1, " + source;
+}
+
 string ret_exp_llvm(string source)
 {
   return "ret i32 " + source;
 }
+
+string ret_bool_exp_llvm(int source)
+{
+  return source==1?"ret i1 1" : "ret i1 0";
+}
+
 string assign_relop_llvm(string target, string op, string left, string right)
 {
   return target + " = icmp " + op + " i32 " + left + ", " + right;
@@ -145,4 +170,9 @@ string phi_eval_llvm(string target, string true_label, string false_label)
 string br_loop_llvm(string target)
 {
   return "br label %" + target;
+}
+
+string zext(string varName ,string input,string sourceType,string targetType)
+{
+  return varName + "= zext " + sourceType +" " + input + " to " + targetType; 
 }

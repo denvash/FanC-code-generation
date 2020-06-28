@@ -51,8 +51,12 @@ void Generator::func_init(atom_t &$$)
 
   auto total_args_str = to_string(total_args);
   // debugGenerator("Func info: Type,Size", type_to_string_map[type] + "," + total_args_str);
-
+  // if($$.TYPE==TYPE_BOOL){
+  // _B.emit(define_bool_func_llvm(total_args, func_id));
+  // }else{
   _B.emit(define_func_llvm(type == TYPE_VOID, total_args, func_id));
+  // }
+
   _B.emit(func_entry_llvm);
 
   if (total_args > 0)
@@ -78,6 +82,11 @@ void Generator::func_end(atom_t &atom_id, atom_t &atom_statement)
   // debugGenerator("Func end label: ", label);
   _B.bpatch(_B.makelist({branch_to_bp, FIRST}), label);
   _B.bpatch(atom_statement.next_list, label);
+  if(atom_statement.TYPE==TYPE_BOOL){
+  _B.bpatch(atom_statement.true_list, label);
+  _B.bpatch(atom_statement.false_list, label);
+  }
+
   _B.emit(atom_id.TYPE == TYPE_VOID ? ret_void_llvm : ret_success_llvm);
   _B.emit(scope_end_llvm);
 }
@@ -117,13 +126,20 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
   /* Cut the last "," */
   args_llvm = args_llvm.substr(0, args_llvm.length() - 1);
   // debugGenerator("func name", func_name);
+  // if($$.TYPE==TYPE_BOOL)
+  //   debugGenerator("func type : bool");
 
   auto call_exp_llvm = call_function_llvm(function_type == TYPE_VOID, func_name, args_llvm);
+  // debugGenerator("func output:"+ call_exp_llvm);
+
 
   if (function_type == TYPE_VOID)
   {
-    _B.emit(call_exp_llvm);
+    auto firstLine = _B.emit(call_exp_llvm);
     $$.place = PLACE_VOID;
+    _B.bpatch(atom_exp_list.false_list,to_string(firstLine)); 
+    _B.bpatch(atom_exp_list.true_list,to_string(firstLine)); 
+    _B.bpatch(atom_exp_list.next_list,to_string(firstLine)); 
   }
   /* There is a return type */
   else
@@ -134,16 +150,17 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id, atom_t &atom_exp_list)
 
     if (function_type == TYPE_BOOL)
     {
-      // debugGenerator("Bool type func");
       auto target_boolean = _gen_var_llvm();
       _B.emit(compare_boolean_llvm(target_boolean, target));
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_boolean));
       $$.true_list = _B.makelist({label_index, FIRST});
       $$.false_list = _B.makelist({label_index, SECOND});
-      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
-                              (_B.makelist({label_index, SECOND})));
+      // $$.next_list = _B.merge((_B.makelist({label_index, FIRST})),
+      //                         (_B.makelist({label_index, SECOND})));
     }
+
   }
+  // debugGenerator("-------------");
 }
 
 /* Func call without args */
@@ -155,6 +172,9 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id)
   auto no_args = "";
 
   auto is_void_func = func_type == TYPE_VOID;
+  // debugGenerator("func call without args", func_name);
+  // debugGenerator("func call without args", func_name);
+
   auto call_llvm = call_function_llvm(is_void_func, func_name, no_args);
 
   // debugGenerator("func call without args", func_name);
@@ -178,7 +198,7 @@ void Generator::func_call(atom_t &$$, atom_t &atom_id)
       auto label_index = _B.emit(branch_conditional_to_bp_llvm(target_bool));
       $$.true_list = _B.makelist({label_index, FIRST});
       $$.false_list = _B.makelist({label_index, SECOND});
-      $$.next_list = _B.merge((_B.makelist({label_index, FIRST})), _B.makelist({label_index, SECOND}));
+      // $$.next_list = _B.merge((_B.makelist({label_index, FIRST})), _B.makelist({label_index, SECOND}));
     }
   }
 }
@@ -390,7 +410,7 @@ void Generator::gen_assign_typed(atom_t &$$, atom_t &atom_type, atom_t &atom_id,
 
     auto false_label = _B.genLabel();
     _B.emit(declare_var_llvm(false_temp, "0", id_offset));
-    _B.emit(store_arg_through_place_llvm("1", false_temp));
+    _B.emit(store_arg_through_place_llvm("0", false_temp));
 
     auto false_index_patch = _B.emit(branch_to_bp_llvm);
     _B.bpatch(atom_exp.false_list, false_label);
@@ -459,6 +479,19 @@ void Generator::gen_return_exp(atom_t &$$, atom_t &atom_exp)
   $$.next_list = atom_exp.next_list;
 }
 
+void Generator::gen_bool_return_exp(atom_t &trueCase, atom_t &falseCase)
+{
+  auto buffer_index = _B.emit(branch_to_bp_llvm);
+  auto trueLabel = _B.genLabel();
+  _B.bpatch(_B.makelist({buffer_index, FIRST}), trueLabel);
+  auto trueJump= _B.emit(ret_exp_llvm("1"));
+  auto falseLabel = _B.genLabel();
+  auto falseJump= _B.emit(ret_exp_llvm("0"));
+  _B.bpatch(trueCase.next_list,trueLabel);
+  _B.bpatch(falseCase.next_list,falseLabel);
+  // $$.next_list = atom_exp.next_list;
+}
+
 void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t &atom_right)
 {
   auto op = *(atom_op.STRING);
@@ -499,12 +532,15 @@ void Generator::gen_relop(atom_t &$$, atom_t &atom_left, atom_t &atom_op, atom_t
     op_llvm = "ne";
   }
   auto target = _gen_var_llvm();
+  auto finalRes = _gen_var_llvm();
   _B.emit(assign_relop_llvm(target, op_llvm, left, right));
   // debugGenerator("label branch", target);
   auto label_index = _B.emit(branch_conditional_to_bp_llvm(target));
+  _B.emit(zext(finalRes,target,"i1","i32"));
   $$.true_list = _B.makelist({label_index, FIRST});
   $$.false_list = _B.makelist({label_index, SECOND});
-  $$.place = target;
+  // $$.place = target;
+  $$.place = finalRes;
 }
 void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &atom_right)
 {
@@ -515,13 +551,18 @@ void Generator::gen_logicalop(atom_t &$$, atom_t &atom_left, string op, atom_t &
     _B.bpatch(atom_left.true_list, $$.quad);
     $$.true_list = atom_right.true_list;
     $$.false_list = _B.merge(atom_left.false_list, atom_right.false_list);
-    $$.next_list = $$.false_list;
+    // $$.next_list = $$.false_list;
   }
   else if (op == OR)
   {
     _B.bpatch(atom_left.false_list, $$.quad);
     $$.false_list = atom_right.false_list;
     $$.true_list = _B.merge(atom_left.true_list, atom_right.true_list);
+    // auto leftLogical = _gen_var_llvm();
+  // _B.emit(assign_relop_llvm(leftLogical, "ne", "0", to_string(atom_left.INT)));
+  //     auto rightLogical = _gen_var_llvm();
+  // _B.emit(assign_relop_llvm(leftLogical, "ne", "0", to_string(atom_right.INT)));
+  // $$.place=leftLogical+rightLogical;
   }
 }
 
@@ -610,6 +651,17 @@ void Generator::gen_bp_loop(atom_t &$$, atom_t &atom_while_exp, atom_t &atom_sta
   _B.bpatch(_B.makelist({label_index, FIRST}), atom_while_exp.quad);
 }
 
+void Generator::gen_bp_loop_else(atom_t &$$, atom_t &atom_while_exp, atom_t &atom_statement1,atom_t &atom_statement2)
+{
+  // debugGenerator("loop quad:", atom_while_exp.quad);
+  _B.bpatch(atom_statement1.continue_list, atom_while_exp.quad);
+
+  $$.next_list = _B.merge(atom_statement1.break_list, atom_statement2.break_list);
+  $$.next_list = _B.merge($$.next_list,atom_statement2.next_list);
+
+}
+
+
 void Generator::gen_typed_id(atom_t &atom_id)
 {
   auto target = _gen_var_llvm();
@@ -640,3 +692,14 @@ void Generator::gen_br_to_bp(atom_t &$$, bool is_break)
     $$.continue_list = list;
   }
 }
+
+
+void Generator::flip_bool(atom_t &$$,atom_t &atom_exp)
+{
+  auto flippedBool = _gen_var_llvm();
+  auto newPlace = _gen_var_llvm();
+  _B.emit(negate_bool(flippedBool,atom_exp.place));
+  _B.emit(zext(newPlace,flippedBool,"i1","i32"));
+  $$.place=newPlace;
+}
+
